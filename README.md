@@ -6,5 +6,5 @@
 
 StarCraft: Brood War replay parser.
 
-Initially this parser was developed as part of the [repMastered project](https://github.com/icza/repmastered),
-but was outsourced as a separate project.
+Initially this parser was developed as part of the [repMastered](https://github.com/icza/repmastered)
+project, but was outsourced here as a separate project.
