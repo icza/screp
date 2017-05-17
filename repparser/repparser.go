@@ -2,6 +2,8 @@
 
 Package repparser implements StarCraft: Brood War replay parsing.
 
+The package is safe for concurrent use.
+
 Information sources:
 
 BWHF replay parser:

@@ -1,6 +1,8 @@
 /*
+
 Package main is a simple CLI app to parse and display information about
 a StarCraft: Brood War replay passed as a CLI argument.
+
 */
 package main
 
@@ -69,5 +71,5 @@ func printUsage() {
 	fmt.Println("Usage:")
 	name := os.Args[0]
 	fmt.Printf("\t%s [FLAGS] repfile.rep\n", name)
-	fmt.Println("\tRun with '-h' to see available flags.")
+	fmt.Println("\tRun with '-h' to seea a list of available flags.")
 }
