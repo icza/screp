@@ -62,7 +62,7 @@ func main() {
 	if *indent {
 		enc.SetIndent("", "  ")
 	}
-	fmt.Println(enc.Encode(r))
+	enc.Encode(r)
 }
 
 func printUsage() {
