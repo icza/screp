@@ -67,6 +67,7 @@ func main() {
 
 func printUsage() {
 	fmt.Println("Usage:")
-	fmt.Println("\tscrep [FLAGS] repfile.rep")
-	fmt.Println("\tRun \"screp -h\" to see available flags.")
+	name := os.Args[0]
+	fmt.Printf("\t%s [FLAGS] repfile.rep\n", name)
+	fmt.Println("\tRun with '-h' to see available flags.")
 }
