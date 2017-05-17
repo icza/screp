@@ -9,4 +9,4 @@ StarCraft: Brood War replay parser.
 Initially this parser was developed as part of the [repMastered](https://github.com/icza/repmastered)
 project (the initial history can be found there), but was outsourced here as a separate project.
 
-Check out the sister project to parse StarCraft II replays: [s2prot](https://github.com/icza/s2prot)
+_Check out the sister project to parse StarCraft II replays: [s2prot](https://github.com/icza/s2prot)_
