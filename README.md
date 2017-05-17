@@ -12,6 +12,8 @@ project (the initial history can be found there), but was outsourced here as a s
 The package is designed to be used by other packages or apps, and is safe for concurrent use.
 There is also an example CLI app that can be used standalone.
 
+Parses both "modern" (starting from 1.18) and "legacy" (pre 1.18) replays.
+
 _Check out the sister project to parse StarCraft II replays: [s2prot](https://github.com/icza/s2prot)_
 
 ## Using the `screp` CLI app
