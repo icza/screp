@@ -9,7 +9,8 @@ StarCraft: Brood War replay parser.
 Initially this parser was developed as part of the [repMastered](https://github.com/icza/repmastered)
 project (the initial history can be found there), but was outsourced here as a separate project.
 
-The package is safe for concurrent use.
+The package is designed to be used by other packages or apps, and is safe for concurrent use.
+There is also an example CLI app that can be used standalone.
 
 _Check out the sister project to parse StarCraft II replays: [s2prot](https://github.com/icza/s2prot)_
 
