@@ -11,13 +11,14 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/icza/screp/repparser"
 )
 
 const (
 	appName    = "screp"
-	appVersion = "v1.0.0-dev"
+	appVersion = "v1.0.0"
 	appAuthor  = "Andras Belicza"
 	appHome    = "https://github.com/icza/screp"
 )
@@ -83,6 +84,7 @@ func main() {
 
 func printVersion() {
 	fmt.Println(appName, "version:", appVersion)
+	fmt.Println("Platform:", runtime.GOOS, runtime.GOARCH)
 	fmt.Println("Author:", appAuthor)
 	fmt.Println("Home page:", appHome)
 }
