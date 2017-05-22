@@ -7,7 +7,7 @@ echo Using app folder: $APP_FOLDER
 
 # Acquire app name
 # Expected format: `    appName = "thename"`
-APP_NAME=$(more $APP_FOLDER/screp.go | grep "appName\s*=" | cut -d '"' -f 2)
+APP_NAME=$(more $APP_FOLDER/*.go | grep "appName\s*=" | cut -d '"' -f 2)
 if [ -z "$APP_NAME" ]; then
     echo Could not detect app name!
     exit 1
@@ -16,7 +16,7 @@ echo Detected app name: $APP_NAME
 
 # Acquire app version
 # Expected format: `    appVersion = "theversion"`
-APP_VERSION=$(more $APP_FOLDER/screp.go | grep "appVersion\s*=" | cut -d '"' -f 2)
+APP_VERSION=$(more $APP_FOLDER/*.go | grep "appVersion\s*=" | cut -d '"' -f 2)
 if [ -z "$APP_VERSION" ]; then
     echo Could not detect app version!
     exit 2
