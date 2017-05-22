@@ -85,6 +85,7 @@ func main() {
 func printVersion() {
 	fmt.Println(appName, "version:", appVersion)
 	fmt.Println("Platform:", runtime.GOOS, runtime.GOARCH)
+	fmt.Println("Built with:", runtime.Version())
 	fmt.Println("Author:", appAuthor)
 	fmt.Println("Home page:", appHome)
 }
