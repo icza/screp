@@ -15,12 +15,21 @@ import (
 	"github.com/icza/screp/repparser"
 )
 
+const (
+	appName    = "screp"
+	appVersion = "v1.0.0-dev"
+	appAuthor  = "Andras Belicza"
+	appHome    = "https://github.com/icza/screp"
+)
+
 // Flag variables
 var (
+	version = flag.Bool("version", false, "print version info and exit")
+
 	header    = flag.Bool("header", true, "print replay header")
 	mapData   = flag.Bool("map", false, "print map data")
-	mapTiles  = flag.Bool("mapTiles", false, "print map data tiles; valid with 'map'")
-	mapResLoc = flag.Bool("mapResLoc", false, "print map data resource locations (minerals and geysers); valid with 'map'")
+	mapTiles  = flag.Bool("maptiles", false, "print map data tiles; valid with 'map'")
+	mapResLoc = flag.Bool("mapres", false, "print map data resource locations (minerals and geysers); valid with 'map'")
 	cmds      = flag.Bool("cmds", false, "print player commands")
 
 	indent = flag.Bool("indent", true, "use indentation when formatting output")
@@ -28,6 +37,11 @@ var (
 
 func main() {
 	flag.Parse()
+
+	if *version {
+		printVersion()
+		return
+	}
 
 	args := flag.Args()
 	if len(args) < 1 {
@@ -67,9 +81,15 @@ func main() {
 	enc.Encode(r)
 }
 
+func printVersion() {
+	fmt.Println(appName, "version:", appVersion)
+	fmt.Println("Author:", appAuthor)
+	fmt.Println("Home page:", appHome)
+}
+
 func printUsage() {
 	fmt.Println("Usage:")
 	name := os.Args[0]
 	fmt.Printf("\t%s [FLAGS] repfile.rep\n", name)
-	fmt.Println("\tRun with '-h' to seea a list of available flags.")
+	fmt.Println("\tRun with '-h' to see a a list of available flags.")
 }
