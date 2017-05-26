@@ -32,8 +32,8 @@ Run with `-h` to see a list of available flags.
 Example to parse a file called `sample.rep`, and display replay header (included by default)
 and basic map data info (without tiles and resource location info):
 
-	s2prot -map=true sample.SC2Relay
+	s2prot -map=true sample.rep
 
 Or simply:
 
-	s2prot -map sample.SC2Relay
+	s2prot -map sample.rep
