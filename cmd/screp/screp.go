@@ -18,7 +18,7 @@ import (
 
 const (
 	appName    = "screp"
-	appVersion = "v1.0.0"
+	appVersion = "v1.0.1-dev"
 	appAuthor  = "Andras Belicza"
 	appHome    = "https://github.com/icza/screp"
 )
@@ -84,6 +84,7 @@ func main() {
 
 func printVersion() {
 	fmt.Println(appName, "version:", appVersion)
+	fmt.Println("Parser version:", repparser.Version)
 	fmt.Println("Platform:", runtime.GOOS, runtime.GOARCH)
 	fmt.Println("Built with:", runtime.Version())
 	fmt.Println("Author:", appAuthor)

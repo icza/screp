@@ -51,6 +51,11 @@ import (
 	"github.com/icza/screp/repparser/repdecoder"
 )
 
+const (
+	// Version is a Semver2 compatible version of the parser.
+	Version = "v1.0.0"
+)
+
 var (
 	// ErrNotReplayFile indicates the given file (or reader) is not a valid
 	// replay file
