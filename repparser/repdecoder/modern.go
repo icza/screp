@@ -40,7 +40,7 @@ func (d *modernDecoder) Section(size int32) (result []byte, err error) {
 		if _, err = io.ReadFull(d.r, compressed); err != nil {
 			return nil, err
 		}
-		if length > 4 { // Is it compressed?
+		if length > 4 && compressed[0] == 0x78 { // Is it compressed? (0x78 zlib magic)
 			if resetter, ok := zr.(zlib.Resetter); ok {
 				err = resetter.Reset(bytes.NewBuffer(compressed), nil)
 			} else {
