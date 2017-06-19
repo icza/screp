@@ -4,6 +4,7 @@ package rep
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/icza/screp/rep/repcore"
@@ -51,6 +52,10 @@ type Header struct {
 
 	// Players contains the actual ("real") players of the game
 	Players []*Player
+
+	// teamPlayers is a lazily initialized, ordered list of the atual players
+	// in team order.
+	teamPlayers []*Player
 }
 
 // Duration returns the game duration.
@@ -61,6 +66,32 @@ func (h *Header) Duration() time.Duration {
 // MapSize returns the map size in widthxheight format, e.g. "64x64".
 func (h *Header) MapSize() string {
 	return fmt.Sprint(h.MapWidth, "x", h.MapHeight)
+}
+
+// TeamPlayers returns the actual players in team order.
+func (h *Header) TeamPlayers() []*Player {
+	if h.teamPlayers == nil {
+		h.teamPlayers = make([]*Player, len(h.Players))
+		copy(h.teamPlayers, h.Players)
+		sort.Slice(h.teamPlayers, func(i int, j int) bool {
+			return h.teamPlayers[i].Team < h.teamPlayers[j].Team
+		})
+	}
+	return h.teamPlayers
+}
+
+// Matchup returns the matchup, e.g. "PvT" or "PTZvZTP".
+func (h *Header) Matchup() string {
+	m := make([]rune, 0, 9)
+	var prevTeam byte
+	for i, p := range h.TeamPlayers() {
+		if i > 0 && p.Team != prevTeam {
+			m = append(m, 'v')
+		}
+		m = append(m, p.Race.Letter)
+		prevTeam = p.Team
+	}
+	return string(m)
 }
 
 // Player represents a player of the game.
