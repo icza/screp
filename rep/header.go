@@ -3,6 +3,7 @@
 package rep
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"time"
@@ -80,7 +81,8 @@ func (h *Header) TeamPlayers() []*Player {
 	return h.teamPlayers
 }
 
-// Matchup returns the matchup, e.g. "PvT" or "PTZvZTP".
+// Matchup returns the matchup, the race letters of players in team order,
+// inserting 'v' between different teams, e.g. "PvT" or "PTZvZTP".
 func (h *Header) Matchup() string {
 	m := make([]rune, 0, 9)
 	var prevTeam byte
@@ -92,6 +94,25 @@ func (h *Header) Matchup() string {
 		prevTeam = p.Team
 	}
 	return string(m)
+}
+
+// PlayerNames returns a comma separated list of player names in team order,
+// inserting " VS " between different teams.
+func (h *Header) PlayerNames() string {
+	buf := &bytes.Buffer{}
+	var prevTeam byte
+	for i, p := range h.TeamPlayers() {
+		if i > 0 {
+			if p.Team != prevTeam {
+				buf.WriteString(" VS ")
+			} else {
+				buf.WriteString(", ")
+			}
+		}
+		buf.WriteString(p.Name)
+		prevTeam = p.Team
+	}
+	return buf.String()
 }
 
 // Player represents a player of the game.
