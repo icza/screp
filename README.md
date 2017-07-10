@@ -37,3 +37,7 @@ and basic map data info (without tiles and resource location info):
 Or simply:
 
 	s2prot -map sample.rep
+
+## Example projects using this
+
+- https://github.com/icza/repmastered
