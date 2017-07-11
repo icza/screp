@@ -37,15 +37,22 @@ type Decoder interface {
 
 // NewFromFile creates a new Decoder that reads and decompresses data form a
 // file.
-func NewFromFile(name string) (Decoder, error) {
-	f, err := os.Open(name)
+func NewFromFile(name string) (d Decoder, err error) {
+	var f *os.File
+	f, err = os.Open(name)
 	if err != nil {
-		return nil, err
+		return
 	}
+
+	defer func() {
+		if err != nil {
+			f.Close()
+		}
+	}()
 
 	stat, err := f.Stat()
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	if stat.IsDir() {
@@ -55,15 +62,15 @@ func NewFromFile(name string) (Decoder, error) {
 	var modern bool
 	if stat.Size() >= 30 {
 		if _, err = f.Seek(28, 0); err != nil {
-			return nil, err
+			return
 		}
 		magic := make([]byte, 2)
 		if _, err = io.ReadFull(f, magic); err != nil {
-			return nil, err
+			return
 		}
 		modern = isModern(magic)
 		if _, err = f.Seek(0, 0); err != nil {
-			return nil, err
+			return
 		}
 	}
 
