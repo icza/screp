@@ -54,7 +54,7 @@ type Header struct {
 	// Players contains the actual ("real") players of the game
 	Players []*Player
 
-	// teamPlayers is a lazily initialized, ordered list of the atual players
+	// teamPlayers is a lazily initialized, ordered list of the actual players
 	// in team order.
 	teamPlayers []*Player
 }

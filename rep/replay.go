@@ -13,4 +13,8 @@ type Replay struct {
 
 	// MapData describes the map and objects on it
 	MapData *MapData
+
+	// Computed contains data that is computed / derived from other parts of the
+	// replay.
+	Computed *Computed
 }
