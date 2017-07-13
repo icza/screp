@@ -102,32 +102,32 @@ func parseProtected(dec repdecoder.Decoder) (r *rep.Replay, err error) {
 
 // Section IDs
 const (
-	sectionIDReplayID = iota // Replay ID section ID
-	sectionIDHeader          // Replay header section ID
-	sectionIDCommands        // Players' commands section ID
-	sectionIDMapData         // Map data section ID
+	SectionIDReplayID = iota // Replay ID section ID
+	SectionIDHeader          // Replay header section ID
+	SectionIDCommands        // Players' commands section ID
+	SectionIDMapData         // Map data section ID
 )
 
-// section describes a section of the replay.
-type section struct {
+// Section describes a Section of the replay.
+type Section struct {
 	// ID of the section
 	ID int
 
-	// size of the uncompressed section in bytes;
-	// 0 means it has to be read as a section of 4 bytes
-	size int32
+	// Size of the uncompressed section in bytes;
+	// 0 means the Size has to be read as a section of 4 bytes
+	Size int32
 
-	// parserFunc defines the function responsible to process (parse / interpret)
+	// ParserFunc defines the function responsible to process (parse / interpret)
 	// the section's data.
-	parserFunc func(data []byte, r *rep.Replay) error
+	ParserFunc func(data []byte, r *rep.Replay) error
 }
 
-// sections describes the subsequent sections of replays
-var sections = []*section{
-	{sectionIDReplayID, 0x04, parseReplayID},
-	{sectionIDHeader, 0x279, parseHeader},
-	{sectionIDCommands, 0, parseCommands},
-	{sectionIDMapData, 0, parseMapData},
+// Sections describes the subsequent Sections of replays
+var Sections = []*Section{
+	{SectionIDReplayID, 0x04, ParseReplayID},
+	{SectionIDHeader, 0x279, ParseHeader},
+	{SectionIDCommands, 0, ParseCommands},
+	{SectionIDMapData, 0, ParseMapData},
 }
 
 // parse parses an SC:BW replay using the given Decoder.
@@ -135,9 +135,9 @@ func parse(dec repdecoder.Decoder) (*rep.Replay, error) {
 	r := new(rep.Replay)
 
 	// A replay is a sequence of sections:
-	for _, s := range sections {
+	for _, s := range Sections {
 		// Determine section size:
-		size := s.size
+		size := s.Size
 		if size == 0 {
 			sizeData, err := dec.Section(4)
 			if err != nil {
@@ -148,7 +148,7 @@ func parse(dec repdecoder.Decoder) (*rep.Replay, error) {
 
 		// Read section data
 		data, err := dec.Section(size)
-		if err != nil && s.ID == sectionIDReplayID {
+		if err != nil && s.ID == SectionIDReplayID {
 			err = ErrNotReplayFile // In case of Replay ID section return special error
 		}
 		if err != nil {
@@ -156,7 +156,7 @@ func parse(dec repdecoder.Decoder) (*rep.Replay, error) {
 		}
 
 		// Process section data
-		if err = s.parserFunc(data, r); err != nil {
+		if err = s.ParserFunc(data, r); err != nil {
 			return nil, err
 		}
 	}
@@ -167,16 +167,16 @@ func parse(dec repdecoder.Decoder) (*rep.Replay, error) {
 // repID is the mandatory data of the Replay ID section
 var repID = []byte("reRS") // abbreviation for replay ReSource?
 
-// parseReplayID processes the replay ID data.
-func parseReplayID(data []byte, r *rep.Replay) (err error) {
+// ParseReplayID processes the replay ID data.
+func ParseReplayID(data []byte, r *rep.Replay) (err error) {
 	if !bytes.Equal(data, repID) {
 		err = ErrNotReplayFile
 	}
 	return
 }
 
-// parseHeader processes the replay header data.
-func parseHeader(data []byte, r *rep.Replay) error {
+// ParseHeader processes the replay header data.
+func ParseHeader(data []byte, r *rep.Replay) error {
 	bo := binary.LittleEndian // ByteOrder reader: little-endian
 
 	h := new(rep.Header)
@@ -226,8 +226,8 @@ func parseHeader(data []byte, r *rep.Replay) error {
 	return nil
 }
 
-// parseCommands processes the players' commands data.
-func parseCommands(data []byte, r *rep.Replay) error {
+// ParseCommands processes the players' commands data.
+func ParseCommands(data []byte, r *rep.Replay) error {
 	bo := binary.LittleEndian // ByteOrder reader: little-endian
 
 	_ = bo
@@ -483,8 +483,8 @@ func parseCommands(data []byte, r *rep.Replay) error {
 	return nil
 }
 
-// parseMapData processes the map data data.
-func parseMapData(data []byte, r *rep.Replay) error {
+// ParseMapData processes the map data data.
+func ParseMapData(data []byte, r *rep.Replay) error {
 	md := new(rep.MapData)
 	r.MapData = md
 
