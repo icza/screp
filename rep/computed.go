@@ -22,15 +22,26 @@ type Computed struct {
 // Result describes the result of a player (e.g. win or loss).
 type Result struct {
 	repcore.Enum
+
+	// ID is the (arbitrary) ID of the result.
+	ID byte
 }
 
 // Results is an enumeration of the possible results.
 var Results = []*Result{
-	{e("Win")},
-	{e("Loss")},
-	{e("Draw")},
-	{e("Unknown")},
+	{e("Unknown"), 0x00},
+	{e("Win"), 0x01},
+	{e("Loss"), 0x02},
+	{e("Draw"), 0x03},
 }
+
+// Named results
+var (
+	ResultUnknown = Results[0]
+	ResultWin     = Results[1]
+	ResultLoss    = Results[2]
+	ResultDraw    = Results[3]
+)
 
 // e creates a new Enum value.
 func e(name string) repcore.Enum {

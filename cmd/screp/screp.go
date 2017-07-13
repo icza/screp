@@ -32,6 +32,7 @@ var (
 	mapTiles  = flag.Bool("maptiles", false, "print map data tiles; valid with 'map'")
 	mapResLoc = flag.Bool("mapres", false, "print map data resource locations (minerals and geysers); valid with 'map'")
 	cmds      = flag.Bool("cmds", false, "print player commands")
+	computed  = flag.Bool("computed", true, "print computed / derived data")
 
 	indent = flag.Bool("indent", true, "use indentation when formatting output")
 )
@@ -54,6 +55,10 @@ func main() {
 	if err != nil {
 		fmt.Printf("Failed to parse replay: %v\n", err)
 		os.Exit(2)
+	}
+
+	if *computed {
+		r.Compute()
 	}
 
 	// Zero values in replay the user do not wish to see:
