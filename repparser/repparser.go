@@ -109,9 +109,9 @@ type Section struct {
 	// 0 means the Size has to be read as a section of 4 bytes
 	Size int32
 
-	// ParserFunc defines the function responsible to process (parse / interpret)
+	// ParseFunc defines the function responsible to process (parse / interpret)
 	// the section's data.
-	ParserFunc func(data []byte, r *rep.Replay) error
+	ParseFunc func(data []byte, r *rep.Replay) error
 }
 
 // Sections describes the subsequent Sections of replays
@@ -156,7 +156,7 @@ func parse(dec repdecoder.Decoder) (*rep.Replay, error) {
 		}
 
 		// Process section data
-		if err = s.ParserFunc(data, r); err != nil {
+		if err = s.ParseFunc(data, r); err != nil {
 			return nil, err
 		}
 	}
