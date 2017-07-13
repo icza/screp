@@ -116,10 +116,10 @@ type Section struct {
 
 // Sections describes the subsequent Sections of replays
 var Sections = []*Section{
-	{0, 0x04, ParseReplayID},
-	{1, 0x279, ParseHeader},
-	{2, 0, ParseCommands},
-	{3, 0, ParseMapData},
+	{0, 0x04, parseReplayID},
+	{1, 0x279, parseHeader},
+	{2, 0, parseCommands},
+	{3, 0, parseMapData},
 }
 
 // Named sections
@@ -167,16 +167,16 @@ func parse(dec repdecoder.Decoder) (*rep.Replay, error) {
 // repID is the mandatory data of the Replay ID section
 var repID = []byte("reRS") // abbreviation for replay ReSource?
 
-// ParseReplayID processes the replay ID data.
-func ParseReplayID(data []byte, r *rep.Replay) (err error) {
+// parseReplayID processes the replay ID data.
+func parseReplayID(data []byte, r *rep.Replay) (err error) {
 	if !bytes.Equal(data, repID) {
 		err = ErrNotReplayFile
 	}
 	return
 }
 
-// ParseHeader processes the replay header data.
-func ParseHeader(data []byte, r *rep.Replay) error {
+// parseHeader processes the replay header data.
+func parseHeader(data []byte, r *rep.Replay) error {
 	bo := binary.LittleEndian // ByteOrder reader: little-endian
 
 	h := new(rep.Header)
@@ -226,8 +226,8 @@ func ParseHeader(data []byte, r *rep.Replay) error {
 	return nil
 }
 
-// ParseCommands processes the players' commands data.
-func ParseCommands(data []byte, r *rep.Replay) error {
+// parseCommands processes the players' commands data.
+func parseCommands(data []byte, r *rep.Replay) error {
 	bo := binary.LittleEndian // ByteOrder reader: little-endian
 
 	_ = bo
@@ -483,8 +483,8 @@ func ParseCommands(data []byte, r *rep.Replay) error {
 	return nil
 }
 
-// ParseMapData processes the map data data.
-func ParseMapData(data []byte, r *rep.Replay) error {
+// parseMapData processes the map data data.
+func parseMapData(data []byte, r *rep.Replay) error {
 	md := new(rep.MapData)
 	r.MapData = md
 
