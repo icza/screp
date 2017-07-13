@@ -100,14 +100,6 @@ func parseProtected(dec repdecoder.Decoder) (r *rep.Replay, err error) {
 	return parse(dec)
 }
 
-// Section IDs
-const (
-	SectionIDReplayID = iota // Replay ID section ID
-	SectionIDHeader          // Replay header section ID
-	SectionIDCommands        // Players' commands section ID
-	SectionIDMapData         // Map data section ID
-)
-
 // Section describes a Section of the replay.
 type Section struct {
 	// ID of the section
@@ -124,11 +116,19 @@ type Section struct {
 
 // Sections describes the subsequent Sections of replays
 var Sections = []*Section{
-	{SectionIDReplayID, 0x04, ParseReplayID},
-	{SectionIDHeader, 0x279, ParseHeader},
-	{SectionIDCommands, 0, ParseCommands},
-	{SectionIDMapData, 0, ParseMapData},
+	{0, 0x04, ParseReplayID},
+	{1, 0x279, ParseHeader},
+	{2, 0, ParseCommands},
+	{3, 0, ParseMapData},
 }
+
+// Named sections
+var (
+	SectionReplayID = Sections[0]
+	SectionHeader   = Sections[1]
+	SectionCommands = Sections[2]
+	SectionMapData  = Sections[3]
+)
 
 // parse parses an SC:BW replay using the given Decoder.
 func parse(dec repdecoder.Decoder) (*rep.Replay, error) {
@@ -148,7 +148,7 @@ func parse(dec repdecoder.Decoder) (*rep.Replay, error) {
 
 		// Read section data
 		data, err := dec.Section(size)
-		if err != nil && s.ID == SectionIDReplayID {
+		if err != nil && s.ID == SectionReplayID.ID {
 			err = ErrNotReplayFile // In case of Replay ID section return special error
 		}
 		if err != nil {
