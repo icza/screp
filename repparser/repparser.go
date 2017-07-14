@@ -262,7 +262,7 @@ func parseHeader(data []byte, r *rep.Replay) error {
 	// Fill Players in team order:
 	h.Players = make([]*rep.Player, len(h.OrigPlayers))
 	copy(h.Players, h.OrigPlayers)
-	sort.Slice(h.Players, func(i int, j int) bool {
+	sort.SliceStable(h.Players, func(i int, j int) bool {
 		return h.Players[i].Team < h.Players[j].Team
 	})
 
