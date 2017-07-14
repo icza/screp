@@ -43,6 +43,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"log"
+	"sort"
 	"time"
 
 	"github.com/icza/screp/rep"
@@ -254,9 +255,16 @@ func parseHeader(data []byte, r *rep.Replay) error {
 
 		// Filter real players:
 		if p.Name != "" {
-			h.Players = append(h.Players, p)
+			h.OrigPlayers = append(h.OrigPlayers, p)
 		}
 	}
+
+	// Fill Players in team order:
+	h.Players = make([]*rep.Player, len(h.OrigPlayers))
+	copy(h.Players, h.OrigPlayers)
+	sort.Slice(h.Players, func(i int, j int) bool {
+		return h.Players[i].Team < h.Players[j].Team
+	})
 
 	return nil
 }

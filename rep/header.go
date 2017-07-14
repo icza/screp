@@ -5,7 +5,6 @@ package rep
 import (
 	"bytes"
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/icza/screp/rep/repcore"
@@ -51,12 +50,13 @@ type Header struct {
 	// Slots contains all players of the game (including open/closed slots)
 	Slots []*Player `json:"-"`
 
-	// Players contains the actual ("real") players of the game
-	Players []*Player
+	// OrigPlayers contains the actual ("real") players of the game
+	// in the order recorded in the replay.
+	OrigPlayers []*Player `json:"-"`
 
-	// teamPlayers is a lazily initialized, ordered list of the actual players
+	// Players contains the actual ("real") players of the game
 	// in team order.
-	teamPlayers []*Player
+	Players []*Player
 }
 
 // Duration returns the game duration.
@@ -69,24 +69,12 @@ func (h *Header) MapSize() string {
 	return fmt.Sprint(h.MapWidth, "x", h.MapHeight)
 }
 
-// TeamPlayers returns the actual players in team order.
-func (h *Header) TeamPlayers() []*Player {
-	if h.teamPlayers == nil {
-		h.teamPlayers = make([]*Player, len(h.Players))
-		copy(h.teamPlayers, h.Players)
-		sort.Slice(h.teamPlayers, func(i int, j int) bool {
-			return h.teamPlayers[i].Team < h.teamPlayers[j].Team
-		})
-	}
-	return h.teamPlayers
-}
-
 // Matchup returns the matchup, the race letters of players in team order,
 // inserting 'v' between different teams, e.g. "PvT" or "PTZvZTP".
 func (h *Header) Matchup() string {
 	m := make([]rune, 0, 9)
 	var prevTeam byte
-	for i, p := range h.TeamPlayers() {
+	for i, p := range h.Players {
 		if i > 0 && p.Team != prevTeam {
 			m = append(m, 'v')
 		}
@@ -101,7 +89,7 @@ func (h *Header) Matchup() string {
 func (h *Header) PlayerNames() string {
 	buf := &bytes.Buffer{}
 	var prevTeam byte
-	for i, p := range h.TeamPlayers() {
+	for i, p := range h.Players {
 		if i > 0 {
 			if p.Team != prevTeam {
 				buf.WriteString(" VS ")
