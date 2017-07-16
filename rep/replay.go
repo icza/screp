@@ -27,7 +27,9 @@ func (r *Replay) Compute() {
 		return
 	}
 
-	c := &Computed{}
+	c := &Computed{
+		PlayerDescs: make([]*PlayerDesc, len(r.Header.Players)),
+	}
 
 	if r.Commands != nil {
 		for _, cmd := range r.Commands.Cmds {

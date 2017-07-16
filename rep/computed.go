@@ -18,8 +18,8 @@ type Computed struct {
 	// TODO ideas: "guess" player results (on a largest remaining team wins basis)
 	// APM of players
 
-	// TeamPlayerDescs contains player descriptions in team order.
-	TeamPlayerDescs []*PlayerDesc
+	// PlayerDescs contains player descriptions in team order.
+	PlayerDescs []*PlayerDesc
 }
 
 // PlayerDesc contains computed / derived data for a player.
