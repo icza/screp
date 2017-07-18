@@ -236,6 +236,7 @@ func parseHeader(data []byte, r *rep.Replay) error {
 		slotsCount = 12
 		maxPlayers = 8
 	)
+	h.PIDPlayers = make(map[byte]*rep.Player, slotsCount)
 	h.Slots = make([]*rep.Player, slotsCount)
 	playerStructs := data[0xa1 : 0xa1+432]
 	for i := range h.Slots {
@@ -252,6 +253,8 @@ func parseHeader(data []byte, r *rep.Replay) error {
 		if i < maxPlayers {
 			p.Color = repcore.ColorByID(bo.Uint32(data[0x251+i*4:]))
 		}
+
+		h.PIDPlayers[p.ID] = p
 
 		// Filter real players:
 		if p.Name != "" {

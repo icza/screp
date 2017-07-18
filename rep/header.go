@@ -57,6 +57,9 @@ type Header struct {
 	// Players contains the actual ("real") players of the game
 	// in team order.
 	Players []*Player
+
+	// PIDPlayers maps from player ID to Player.
+	PIDPlayers map[byte]*Player `json:"-"`
 }
 
 // Duration returns the game duration.
