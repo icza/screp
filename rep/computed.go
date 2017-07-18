@@ -12,19 +12,30 @@ type Computed struct {
 	// ChatCmds is a collection of the player chat.
 	ChatCmds []*repcmd.ChatCmd
 
-	// TODO ideas: "guess" player results (on a largest remaining team wins basis)
-	// APM of players
-
 	// WinnerTeam if can be detected by the "largest remaining team wins"
 	// algorithm. It's 0 if winner team is unknown.
 	WinnerTeam byte
 
 	// PlayerDescs contains player descriptions in team order.
 	PlayerDescs []*PlayerDesc
+
+	// PIDPlayerDescs maps from player ID to PlayerDesc.
+	PIDPlayerDescs map[byte]*PlayerDesc `json:"-"`
 }
 
 // PlayerDesc contains computed / derived data for a player.
 type PlayerDesc struct {
 	// PlayerID this PlayerDesc belongs to.
 	PlayerID byte
+
+	// LastCmd is the last command of the player.
+	LastCmd repcmd.Cmd
+
+	// TODO also count and exclude commands in the first 2 minutes?
+
+	// CmdCount is the number of commands of the player.
+	CmdCount int
+
+	// APM is the APM (Actions Per Minute) of the player.
+	APM int
 }

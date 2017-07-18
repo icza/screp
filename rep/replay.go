@@ -28,13 +28,16 @@ func (r *Replay) Compute() {
 	}
 
 	c := &Computed{
-		PlayerDescs: make([]*PlayerDesc, len(r.Header.Players)),
+		PlayerDescs:    make([]*PlayerDesc, len(r.Header.Players)),
+		PIDPlayerDescs: make(map[byte]*PlayerDesc, len(r.Header.Players)),
 	}
 
 	for i, p := range r.Header.Players {
-		c.PlayerDescs[i] = &PlayerDesc{
+		pd := &PlayerDesc{
 			PlayerID: p.ID,
 		}
+		c.PlayerDescs[i] = pd
+		c.PIDPlayerDescs[p.ID] = pd
 	}
 
 	// For winners detection, keep track of team sizes:
@@ -44,7 +47,9 @@ func (r *Replay) Compute() {
 	}
 
 	if r.Commands != nil {
-		for _, cmd := range r.Commands.Cmds {
+		cmds := r.Commands.Cmds
+		for _, cmd := range cmds {
+			c.PIDPlayerDescs[cmd.BaseCmd().PlayerID].CmdCount++
 			switch x := cmd.(type) {
 			case *repcmd.LeaveGameCmd:
 				c.LeaveGameCmds = append(c.LeaveGameCmds, x)
@@ -52,6 +57,30 @@ func (r *Replay) Compute() {
 			case *repcmd.ChatCmd:
 				c.ChatCmds = append(c.ChatCmds, x)
 			}
+		}
+
+		// Search for last commands:
+		// Make a local copy of the PIDPlayerDescs map to keep track of
+		// players we still need this info for:
+		pidPlayerDescs := make(map[byte]*PlayerDesc, len(r.Header.Players))
+		for pid, pd := range c.PIDPlayerDescs {
+			// Optimization: Only include players that do have commands:
+			if pd.CmdCount > 0 {
+				pidPlayerDescs[pid] = pd
+			}
+		}
+		for i := len(cmds) - 1; i >= 0; i-- {
+			cmd := cmds[i]
+			pd := pidPlayerDescs[cmd.BaseCmd().PlayerID]
+			if pd == nil {
+				continue
+			}
+			pd.LastCmd = cmd
+			// Optimization: If this was the last player, break:
+			if len(pidPlayerDescs) == 1 {
+				break
+			}
+			delete(pidPlayerDescs, pd.PlayerID)
 		}
 	}
 
@@ -75,6 +104,15 @@ func (r *Replay) Compute() {
 			// We have our winners!
 			c.WinnerTeam = maxTeam
 		}
+	}
+
+	// Calculate APMs:
+	for _, pd := range c.PlayerDescs {
+		if pd.LastCmd == nil {
+			continue
+		}
+		mins := pd.LastCmd.BaseCmd().Frame.Duration().Minutes()
+		pd.APM = int(float64(pd.CmdCount)/mins + 0.5)
 	}
 
 	r.Computed = c
