@@ -31,11 +31,12 @@ type PlayerDesc struct {
 	// LastCmd is the last command of the player.
 	LastCmd repcmd.Cmd
 
-	// TODO also count and exclude commands in the first 2 minutes?
-
 	// CmdCount is the number of commands of the player.
 	CmdCount int
 
 	// APM is the APM (Actions Per Minute) of the player.
 	APM int
+
+	// StartLocation of the player
+	StartLocation *StartLocation
 }

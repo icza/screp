@@ -82,37 +82,50 @@ func (r *Replay) Compute() {
 			}
 			delete(pidPlayerDescs, pd.PlayerID)
 		}
-	}
 
-	// Complete winners detection: largest remaining team wins:
-	maxTeam, maxSize := byte(0), -1
-	for team, size := range teamSizes {
-		if size > maxSize {
-			maxTeam, maxSize = team, size
-		}
-	}
-	// Are winners detectable?
-	if maxSize > 0 {
-		// Are there only one team with max size?
-		count := 0
-		for _, size := range teamSizes {
-			if size == maxSize {
-				count++
+		// Complete winners detection: largest remaining team wins:
+		maxTeam, maxSize := byte(0), -1
+		for team, size := range teamSizes {
+			if size > maxSize {
+				maxTeam, maxSize = team, size
 			}
 		}
-		if count == 1 {
-			// We have our winners!
-			c.WinnerTeam = maxTeam
+		// Are winners detectable?
+		if maxSize > 0 {
+			// Are there only one team with max size?
+			count := 0
+			for _, size := range teamSizes {
+				if size == maxSize {
+					count++
+				}
+			}
+			if count == 1 {
+				// We have our winners!
+				c.WinnerTeam = maxTeam
+			}
+		}
+
+		// Calculate APMs:
+		for _, pd := range c.PlayerDescs {
+			if pd.LastCmd == nil {
+				continue
+			}
+			mins := pd.LastCmd.BaseCmd().Frame.Duration().Minutes()
+			pd.APM = int(float64(pd.CmdCount)/mins + 0.5)
 		}
 	}
 
-	// Calculate APMs:
-	for _, pd := range c.PlayerDescs {
-		if pd.LastCmd == nil {
-			continue
+	if r.MapData != nil {
+		// Lookup start location of players
+		sls := r.MapData.StartLocations
+		for i, p := range r.Header.Players {
+			for j := range sls {
+				if p.SlotID == uint16(sls[j].SlotID) {
+					c.PlayerDescs[i].StartLocation = &sls[j]
+					break
+				}
+			}
 		}
-		mins := pd.LastCmd.BaseCmd().Frame.Duration().Minutes()
-		pd.APM = int(float64(pd.CmdCount)/mins + 0.5)
 	}
 
 	r.Computed = c

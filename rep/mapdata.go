@@ -35,6 +35,6 @@ type StartLocation struct {
 	repcore.Point
 
 	// SlotID of the owner of this start location;
-	// Belongs the Player with matching Player.SlotID
+	// Belongs to the Player with matching Player.SlotID
 	SlotID byte
 }
