@@ -2,7 +2,10 @@
 
 package rep
 
-import "github.com/icza/screp/rep/repcmd"
+import (
+	"github.com/icza/screp/rep/repcmd"
+	"github.com/icza/screp/rep/repcore"
+)
 
 // Computed contains computed, derived data from other parts of the replay.
 type Computed struct {
@@ -28,8 +31,8 @@ type PlayerDesc struct {
 	// PlayerID this PlayerDesc belongs to.
 	PlayerID byte
 
-	// LastCmd is the last command of the player.
-	LastCmd repcmd.Cmd
+	// LastCmdFrame is the frame of the last command of the player.
+	LastCmdFrame repcore.Frame
 
 	// CmdCount is the number of commands of the player.
 	CmdCount int
@@ -38,5 +41,10 @@ type PlayerDesc struct {
 	APM int
 
 	// StartLocation of the player
-	StartLocation *StartLocation
+	StartLocation *repcore.Point
+
+	// StartDirection is the direction of the start location of the player
+	// compared to the center of the map, expressed using the clock,
+	// e.g. 1 o'clock, 6 o'clock etc.
+	StartDirection int
 }

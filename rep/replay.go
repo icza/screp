@@ -3,7 +3,11 @@
 
 package rep
 
-import "github.com/icza/screp/rep/repcmd"
+import (
+	"math"
+
+	"github.com/icza/screp/rep/repcmd"
+)
 
 // Replay models an SC:BW replay.
 type Replay struct {
@@ -75,7 +79,7 @@ func (r *Replay) Compute() {
 			if pd == nil {
 				continue
 			}
-			pd.LastCmd = cmd
+			pd.LastCmdFrame = cmd.BaseCmd().Frame
 			// Optimization: If this was the last player, break:
 			if len(pidPlayerDescs) == 1 {
 				break
@@ -107,21 +111,28 @@ func (r *Replay) Compute() {
 
 		// Calculate APMs:
 		for _, pd := range c.PlayerDescs {
-			if pd.LastCmd == nil {
+			if pd.LastCmdFrame == 0 {
 				continue
 			}
-			mins := pd.LastCmd.BaseCmd().Frame.Duration().Minutes()
+			mins := pd.LastCmdFrame.Duration().Minutes()
 			pd.APM = int(float64(pd.CmdCount)/mins + 0.5)
 		}
 	}
 
 	if r.MapData != nil {
+		// 1 tile is 32 pixels, so half is x*16:
+		cx, cy := float64(r.Header.MapWidth*16), float64(r.Header.MapHeight*16)
 		// Lookup start location of players
 		sls := r.MapData.StartLocations
 		for i, p := range r.Header.Players {
 			for j := range sls {
 				if p.SlotID == uint16(sls[j].SlotID) {
-					c.PlayerDescs[i].StartLocation = &sls[j]
+					pt := &sls[j].Point
+					c.PlayerDescs[i].StartLocation = pt
+					// Map Y coordinate grows from top to bottom:
+					c.PlayerDescs[i].StartDirection = angleToClock(
+						math.Atan2(cy-float64(pt.Y), float64(pt.X)-cx),
+					)
 					break
 				}
 			}
@@ -129,4 +140,38 @@ func (r *Replay) Compute() {
 	}
 
 	r.Computed = c
+}
+
+// angleToClock converts an angle given in radian to an hour clock value
+// in the range of 1..12.
+//
+// Examples:
+//  - PI/2 => 12 (o'clock)
+//  - 0 => 3 (o'clock)
+//  - PI => 9 (o'clock)
+func angleToClock(angle float64) int {
+	// The algorithm below computes clock value in the range of 0..11 where
+	// 0 corresponds to 12.
+
+	// 1 hour is PI/6 angle range
+	const oneHour = math.Pi / 6
+
+	// Shift by 3:30 (0 or 12 o-clock starts at 11:30)
+	// and invert direction (clockwise):
+	angle = -angle + oneHour*3.5
+
+	// Put in range of 0..2*PI
+	for angle < 0 {
+		angle += oneHour * 12
+	}
+	for angle >= oneHour*12 {
+		angle -= oneHour * 12
+	}
+
+	// And convert to a clock value:
+	hour := int(angle / oneHour)
+	if hour == 0 {
+		return 12
+	}
+	return hour
 }
