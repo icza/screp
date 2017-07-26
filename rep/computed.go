@@ -35,10 +35,10 @@ type PlayerDesc struct {
 	LastCmdFrame repcore.Frame
 
 	// CmdCount is the number of commands of the player.
-	CmdCount int
+	CmdCount uint32
 
 	// APM is the APM (Actions Per Minute) of the player.
-	APM int
+	APM int32
 
 	// StartLocation of the player
 	StartLocation *repcore.Point
@@ -46,5 +46,5 @@ type PlayerDesc struct {
 	// StartDirection is the direction of the start location of the player
 	// compared to the center of the map, expressed using the clock,
 	// e.g. 1 o'clock, 6 o'clock etc.
-	StartDirection int
+	StartDirection int32
 }

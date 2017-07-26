@@ -8,7 +8,7 @@ import (
 func TestAngleToClock(t *testing.T) {
 	cases := []struct {
 		angle float64
-		clock int
+		clock int32
 	}{
 		{0, 3},
 		{math.Pi / 2, 12},

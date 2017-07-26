@@ -115,7 +115,7 @@ func (r *Replay) Compute() {
 				continue
 			}
 			mins := pd.LastCmdFrame.Duration().Minutes()
-			pd.APM = int(float64(pd.CmdCount)/mins + 0.5)
+			pd.APM = int32(float64(pd.CmdCount)/mins + 0.5)
 		}
 	}
 
@@ -149,7 +149,7 @@ func (r *Replay) Compute() {
 //  - PI/2 => 12 (o'clock)
 //  - 0 => 3 (o'clock)
 //  - PI => 9 (o'clock)
-func angleToClock(angle float64) int {
+func angleToClock(angle float64) int32 {
 	// The algorithm below computes clock value in the range of 0..11 where
 	// 0 corresponds to 12.
 
@@ -169,7 +169,7 @@ func angleToClock(angle float64) int {
 	}
 
 	// And convert to a clock value:
-	hour := int(angle / oneHour)
+	hour := int32(angle / oneHour)
 	if hour == 0 {
 		return 12
 	}
