@@ -100,5 +100,5 @@ func printUsage() {
 	fmt.Println("Usage:")
 	name := os.Args[0]
 	fmt.Printf("\t%s [FLAGS] repfile.rep\n", name)
-	fmt.Println("\tRun with '-h' to see a a list of available flags.")
+	fmt.Println("\tRun with '-h' to see a list of available flags.")
 }
