@@ -37,6 +37,14 @@ and basic map data info (without tiles and resource location info):
 Or simply:
 
 	s2prot -map sample.rep
+	
+## Installing the `screp` CLI app
+
+Install the command line application via:
+
+	go get github.com/icza/screp/...
+
+This will place `screp` inside `$GOPATH/bin/`.
 
 ## Example projects using this
 
