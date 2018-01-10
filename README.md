@@ -40,13 +40,13 @@ Or simply:
 	
 ## Installing the `screp` CLI app
 
-The easiest is to download the binary release prepared for your platform from the [Releases page](https://github.com/icza/screp/releases). Extract the archive and start using `screp`.
+The easiest is to download the binary release prepared for your platform from the [Releases](https://github.com/icza/screp/releases) page. Extract the archive and start using `screp`.
 
-If you want to build `screp` from source, then simply run the
+If you want to build `screp` from source, then simply run the following command:
 
 	go get -u github.com/icza/screp/...
 
-This will clone this repo if you don't have it yet, or update it if you already have it in your `$GOPATH`, and will build and place `screp` inside `$GOPATH/bin/`.
+This will clone this repo if you don't have it yet, or update it if you already have it in your `$GOPATH`, and will build and place `screp` inside `$GOPATH/bin`.
 
 ## Example projects using this
 
