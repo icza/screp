@@ -61,7 +61,7 @@ func NewFromFile(name string) (d Decoder, err error) {
 
 	var modern bool
 	if stat.Size() >= 30 {
-		if _, err = f.Seek(28, 0); err != nil {
+		if _, err = f.Seek(28, io.SeekStart); err != nil {
 			return
 		}
 		magic := make([]byte, 2)
@@ -69,7 +69,7 @@ func NewFromFile(name string) (d Decoder, err error) {
 			return
 		}
 		modern = isModern(magic)
-		if _, err = f.Seek(0, 0); err != nil {
+		if _, err = f.Seek(0, io.SeekStart); err != nil {
 			return
 		}
 	}
