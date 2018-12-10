@@ -149,7 +149,7 @@ var (
 func parse(dec repdecoder.Decoder, commands, mapData bool) (*rep.Replay, error) {
 	r := new(rep.Replay)
 
-	// Determine last section that needs to be decodeed / parseed:
+	// Determine last section that needs to be decoded / parsed:
 	var lastSection *Section
 	switch {
 	case mapData:
