@@ -200,15 +200,21 @@ func parse(dec repdecoder.Decoder, commands, mapData bool) (*rep.Replay, error) 
 	return r, nil
 }
 
-// repID is the mandatory data of the Replay ID section
-var repID = []byte("reRS") // abbreviation for replay ReSource?
+// repIDs is the possible valid content of the Replay ID section
+var repIDs = [][]byte{
+	[]byte("seRS"), // Starting from 1.21
+	[]byte("reRS"), // Up until 1.20. Abbreviation for replay ReSource?
+}
 
 // parseReplayID processes the replay ID data.
 func parseReplayID(data []byte, r *rep.Replay) (err error) {
-	if !bytes.Equal(data, repID) {
-		err = ErrNotReplayFile
+	for _, repID := range repIDs {
+		if bytes.Equal(data, repID) {
+			return
+		}
 	}
-	return
+
+	return ErrNotReplayFile
 }
 
 // parseHeader processes the replay header data.
