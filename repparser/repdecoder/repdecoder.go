@@ -28,6 +28,9 @@ var (
 
 // Decoder wraps a Section method for decoding a section of a given size.
 type Decoder interface {
+	// NewSection must be called between sections.
+	NewSection() error
+
 	// Section decodes a section of the given size.
 	Section(size int32) (data []byte, err error)
 
@@ -108,6 +111,14 @@ func detectRepFormat(fileHeader []byte) repFormat {
 		return repFormatUnknown
 	}
 
+	// legacy and pre 1.21 modern replays have replay ID data "reRS".
+	// Starting from 1.21, replay ID data is "seRS".
+	if fileHeader[12] == 's' {
+		return repFormatModern121
+	}
+
+	// It's pre 1.21, check if legacy:
+
 	// Now only checking first byte of the compressed data block.
 	// 2nd would be
 	//     0x01 no compression
@@ -118,13 +129,7 @@ func detectRepFormat(fileHeader []byte) repFormat {
 		return repFormatLegacy
 	}
 
-	// It is modern. Which one?
-	// legacy and pre 1.21 modern replays have replay ID data "reRS".
-	// Starting from 1.21, replay ID data is "seRS".
-	if fileHeader[12] == 'r' {
-		return repFormatModern
-	}
-	return repFormatModern121
+	return repFormatModern
 }
 
 // newDecoder creates a new Decoder that reads and decompresses data from the given Reader.
@@ -159,8 +164,8 @@ type decoder struct {
 	// rf identifiers the rep format
 	rf repFormat
 
-	// sectionsRead tells how many sections have been read
-	sectionsRead int
+	// sectionsCounter tells how many sections have been read
+	sectionsCounter int
 
 	// intBuf is a general buffer for reading an int32 value
 	int32Buf []byte
@@ -179,20 +184,27 @@ func (d *decoder) readInt32() (n int32, err error) {
 	return
 }
 
+func (d *decoder) NewSection() (err error) {
+	d.sectionsCounter++
+
+	if d.rf == repFormatModern121 {
+		// There is a 4-byte encoded length between sections:
+		if d.sectionsCounter > 1 {
+			if _, err = d.readInt32(); err != nil {
+				return
+			}
+		}
+	}
+
+	return
+}
+
 // sectionHeader reads the section header.
 func (d *decoder) sectionHeader(size int32) (count int32, result []byte, err error) {
 	if size == 0 {
 		result = []byte{}
 		return
 	}
-
-	if d.sectionsRead > 0 {
-		// There is a 4-bytes encoded length after the first section:
-		if _, err = d.readInt32(); err != nil {
-			return
-		}
-	}
-	d.sectionsRead++
 
 	// checksum, we're not checking it
 	if _, err = d.readInt32(); err != nil {

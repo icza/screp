@@ -162,6 +162,10 @@ func parse(dec repdecoder.Decoder, commands, mapData bool) (*rep.Replay, error) 
 
 	// A replay is a sequence of sections:
 	for _, s := range Sections {
+		if err := dec.NewSection(); err != nil {
+			return nil, err
+		}
+
 		// Determine section size:
 		size := s.Size
 		if size == 0 {
