@@ -59,67 +59,87 @@ func NewFromFile(name string) (d Decoder, err error) {
 		return nil, fmt.Errorf("not a file: %s", name)
 	}
 
-	var modern bool
+	var rf repFormat
 	if stat.Size() >= 30 {
-		if _, err = f.Seek(28, io.SeekStart); err != nil {
+		fileHeader := make([]byte, 30)
+		if _, err = io.ReadFull(f, fileHeader); err != nil {
 			return
 		}
-		magic := make([]byte, 2)
-		if _, err = io.ReadFull(f, magic); err != nil {
-			return
-		}
-		modern = isModern(magic)
+		rf = detectRepFormat(fileHeader)
 		if _, err = f.Seek(0, io.SeekStart); err != nil {
 			return
 		}
 	}
 
-	return newDecoder(f, modern), nil
+	return newDecoder(f, rf), nil
 }
 
 // New creates a new Decoder that reads and decompresses data from the
 // given byte slice.
 func New(repData []byte) Decoder {
-	var modern bool
+	rf := repFormatUnknown
 	if len(repData) >= 30 {
-		modern = isModern(repData[28:30])
+		rf = detectRepFormat(repData[:30])
 	}
 
-	return newDecoder(bytes.NewBuffer(repData), modern)
+	return newDecoder(bytes.NewBuffer(repData), rf)
 }
 
-// isModern expects the first bytes of the compressed data block of the Header
-// section (which starts at offset 28), and tells if the replay is modern
-// based on whether the magic is a valid zlib header.
-// At least 2 bytes should be passed.
-func isModern(magic []byte) bool {
-	if len(magic) < 2 {
-		return false
+// repFormat identifies the replay format
+type repFormat int
+
+// Possible values of repFormat
+const (
+	repFormatUnknown   repFormat = iota // Unknown replay format
+	repFormatLegacy                     // Legacy replay format (pre 1.18)
+	repFormatModern                     // Modern replay format (1.18 - 1.20)
+	repFormatModern121                  // Modern 1.21 replay format (starting from 1.21)
+)
+
+// detectRepFormat detects the replay format based on the file header
+// (the initial bytes of the binary replay).
+// Information used from the header includes the replay ID section's data
+// (which is 4 bytes, starting at offset 12), and the first bytes of the compressed
+// data block of the Header section (which starts at offset 28).
+// If the compressed data block starts with the magic of the valid zlib header,
+// it is modern. If it is modern, the replay ID data decides which version.
+func detectRepFormat(fileHeader []byte) repFormat {
+	if len(fileHeader) < 30 {
+		return repFormatUnknown
 	}
-	if magic[0] != 0x78 {
-		return false
-	}
-	// Now only checking first byte.
+
+	// Now only checking first byte of the compressed data block.
 	// 2nd would be
 	//     0x01 no compression
 	//     0x5E level 1..5
 	//     0x9C level 6 (default compression?)
 	//     0xDA level 7..9
-	return true
+	if fileHeader[28] != 0x78 {
+		return repFormatLegacy
+	}
+
+	// It is modern. Which one?
+	// legacy and pre 1.21 modern replays have replay ID data "reRS".
+	// Starting from 1.21, replay ID data is "seRS".
+	if fileHeader[12] == 'r' {
+		return repFormatModern
+	}
+	return repFormatModern121
 }
 
 // newDecoder creates a new Decoder that reads and decompresses data from the given Reader.
 // The source is treated as a modern replay if modern is true, else as a
 // legacy replay.
-func newDecoder(r io.Reader, modern bool) Decoder {
+func newDecoder(r io.Reader, rf repFormat) Decoder {
 	dec := decoder{
 		r:        r,
+		rf:       rf,
 		int32Buf: make([]byte, 4),
 		buf:      make([]byte, 0x2000), // 8 KB buffer
 	}
 
-	switch modern {
-	case true:
+	switch rf {
+	case repFormatModern, repFormatModern121:
 		return &modernDecoder{
 			decoder: dec,
 		}
@@ -135,6 +155,9 @@ func newDecoder(r io.Reader, modern bool) Decoder {
 type decoder struct {
 	// r is the source of replay data
 	r io.Reader
+
+	// rf identifiers the rep format
+	rf repFormat
 
 	// intBuf is a general buffer for reading an int32 value
 	int32Buf []byte
