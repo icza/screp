@@ -159,6 +159,9 @@ type decoder struct {
 	// rf identifiers the rep format
 	rf repFormat
 
+	// sectionsRead tells how many sections have been read
+	sectionsRead int
+
 	// intBuf is a general buffer for reading an int32 value
 	int32Buf []byte
 
@@ -182,6 +185,14 @@ func (d *decoder) sectionHeader(size int32) (count int32, result []byte, err err
 		result = []byte{}
 		return
 	}
+
+	if d.sectionsRead > 0 {
+		// There is a 4-bytes encoded length after the first section:
+		if _, err = d.readInt32(); err != nil {
+			return
+		}
+	}
+	d.sectionsRead++
 
 	// checksum, we're not checking it
 	if _, err = d.readInt32(); err != nil {
