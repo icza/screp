@@ -189,7 +189,7 @@ func (d *decoder) NewSection() (err error) {
 
 	if d.rf == repFormatModern121 {
 		// There is a 4-byte encoded length between sections:
-		if d.sectionsCounter > 1 {
+		if d.sectionsCounter == 2 {
 			if _, err = d.readInt32(); err != nil {
 				return
 			}
