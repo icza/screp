@@ -42,6 +42,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"log"
 	"sort"
 	"time"
@@ -511,10 +512,46 @@ func parseCommands(data []byte, r *rep.Replay) error {
 			case repcmd.TypeIDReplaySpeed:
 				sr.pos += 9
 
+			// New commands introduced in 1.21
+
+			case 0x60: // Some kind of Move ?
+				cmd = &repcmd.GeneralCmd{
+					Base: base,
+					Data: sr.readSlice(11),
+				}
+			case 0x61:
+				cmd = &repcmd.GeneralCmd{
+					Base: base,
+					Data: sr.readSlice(12),
+				}
+			case 0x62:
+				cmd = &repcmd.GeneralCmd{
+					Base: base,
+					Data: sr.readSlice(4),
+				}
+			case repcmd.TypeIDSelect121:
+				count := sr.getByte()
+				selectCmd := &repcmd.SelectCmd{
+					Base:     base,
+					UnitTags: make([]repcmd.UnitTag, count),
+				}
+				for i := byte(0); i < count; i++ {
+					selectCmd.UnitTags[i] = repcmd.UnitTag(sr.getUint16())
+					sr.getUint16() // Unknown, always 0?
+				}
+				cmd = selectCmd
+			case 0x64, 0x65:
+				count := sr.getByte()
+				cmd = &repcmd.GeneralCmd{
+					Base: base,
+					Data: sr.readSlice(uint32(count) * 4),
+				}
+
 			default:
 				// We don't know how to parse this command, we have to skip
 				// to the end of the command block
 				// (potentially skipping additional commands...)
+				fmt.Printf("skipping typeID: %#v, frame: %d, playerID: %d, remaining bytes: %d [% x]\n", base.Type.ID, base.Frame, base.PlayerID, cmdBlockEndPos-sr.pos, sr.b[sr.pos:cmdBlockEndPos])
 				pec := &repcmd.ParseErrCmd{Base: base}
 				if len(cs.Cmds) > 0 {
 					pec.PrevCmd = cs.Cmds[len(cs.Cmds)-1]
