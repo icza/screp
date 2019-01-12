@@ -33,6 +33,7 @@ var (
 	mapResLoc = flag.Bool("mapres", false, "print map data resource locations (minerals and geysers); valid with 'map'")
 	cmds      = flag.Bool("cmds", false, "print player commands")
 	computed  = flag.Bool("computed", true, "print computed / derived data")
+	outFile   = flag.String("outfile", "", "optional output file name")
 
 	indent = flag.Bool("indent", true, "use indentation when formatting output")
 )
@@ -80,7 +81,24 @@ func main() {
 		r.Commands = nil
 	}
 
-	enc := json.NewEncoder(os.Stdout)
+	var enc *json.Encoder
+
+	if *outFile == "" {
+		enc = json.NewEncoder(os.Stdout)
+	} else {
+		fp, err := os.Create(*outFile)
+		if err != nil {
+			fmt.Printf("Failed to create output file: %v\n", err)
+			os.Exit(3)
+		}
+		defer func() {
+			if err := fp.Close(); err != nil {
+				panic(err)
+			}
+		}()
+		enc = json.NewEncoder(fp)
+	}
+
 	if *indent {
 		enc.SetIndent("", "  ")
 	}
