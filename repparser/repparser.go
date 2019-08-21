@@ -44,6 +44,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"runtime"
 	"sort"
 	"time"
 
@@ -109,6 +110,9 @@ func parseProtected(dec repdecoder.Decoder, commands, mapData bool) (r *rep.Repl
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Parsing error: %v", r)
+			buf := make([]byte, 2000)
+			n := runtime.Stack(buf, false)
+			log.Printf("Stack: %s", buf[:n])
 			err = ErrParsing
 		}
 	}()
