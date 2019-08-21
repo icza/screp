@@ -164,7 +164,7 @@ func parse(dec repdecoder.Decoder, commands, mapData bool) (*rep.Replay, error) 
 	// A replay is a sequence of sections:
 	for _, s := range Sections {
 		if err := dec.NewSection(); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Decoder.NewSection() error: %v", err)
 		}
 
 		// Determine section size:
@@ -172,7 +172,7 @@ func parse(dec repdecoder.Decoder, commands, mapData bool) (*rep.Replay, error) 
 		if size == 0 {
 			sizeData, err := dec.Section(4)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Decoder.Section() error when reading size: %v", err)
 			}
 			size = int32(binary.LittleEndian.Uint32(sizeData))
 		}
@@ -183,7 +183,7 @@ func parse(dec repdecoder.Decoder, commands, mapData bool) (*rep.Replay, error) 
 			err = ErrNotReplayFile // In case of Replay ID section return special error
 		}
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Decoder.Section() error: %v", err)
 		}
 
 		// Need to process?
@@ -193,7 +193,7 @@ func parse(dec repdecoder.Decoder, commands, mapData bool) (*rep.Replay, error) 
 		default:
 			// Process section data
 			if err = s.ParseFunc(data, r); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("ParseFunc() error (sectionID: %d): %v", s.ID, err)
 			}
 		}
 
