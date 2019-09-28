@@ -415,9 +415,9 @@ func parseCommands(data []byte, r *rep.Replay) error {
 				}
 
 			case repcmd.TypeIDUnload:
-				cmd = &repcmd.GeneralCmd{
-					Base: base,
-					Data: sr.readSlice(2),
+				cmd = &repcmd.UnloadCmd{
+					Base:    base,
+					UnitTag: repcmd.UnitTag(sr.getUint16()),
 				}
 
 			case repcmd.TypeIDLiftOff:
