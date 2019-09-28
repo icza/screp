@@ -240,6 +240,7 @@ var Units = []*Unit{
 	{e("Zerg Vespene Gas Sac Type 2"), 0xE1},
 	{e("Terran Vespene Gas Tank Type 1"), 0xE2},
 	{e("Terran Vespene Gas Tank Type 2"), 0xE3},
+	{e("None"), 0xE4},
 }
 
 // unitIDUnit maps from unit ID to unit.
