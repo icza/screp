@@ -518,22 +518,34 @@ func parseCommands(data []byte, r *rep.Replay) error {
 
 			// New commands introduced in 1.21
 
-			case 0x60: // Some kind of Move ?
-				cmd = &repcmd.GeneralCmd{
-					Base: base,
-					Data: sr.readSlice(11),
-				}
-			case 0x61:
-				cmd = &repcmd.GeneralCmd{
-					Base: base,
-					Data: sr.readSlice(12),
-				}
-			case 0x62:
-				cmd = &repcmd.GeneralCmd{
-					Base: base,
-					Data: sr.readSlice(4),
-				}
-			case repcmd.TypeIDSelect121:
+			case repcmd.TypeIDRightClick121:
+				rccmd := &repcmd.RightClickCmd{Base: base}
+				rccmd.Pos.X = sr.getUint16()
+				rccmd.Pos.Y = sr.getUint16()
+				rccmd.UnitTag = repcmd.UnitTag(sr.getUint16())
+				sr.getUint16() // Unknown, always 0?
+				rccmd.Unit = repcmd.UnitByID(sr.getUint16())
+				rccmd.Queued = sr.getByte() != 0
+				cmd = rccmd
+
+			case repcmd.TypeIDTargetedOrder121:
+				tocmd := &repcmd.TargetedOrderCmd{Base: base}
+				tocmd.Pos.X = sr.getUint16()
+				tocmd.Pos.Y = sr.getUint16()
+				tocmd.UnitTag = repcmd.UnitTag(sr.getUint16())
+				sr.getUint16() // Unknown, always 0?
+				tocmd.Unit = repcmd.UnitByID(sr.getUint16())
+				tocmd.Order = repcmd.OrderByID(sr.getByte())
+				tocmd.Queued = sr.getByte() != 0
+				cmd = tocmd
+
+			case repcmd.TypeIDUnload121:
+				ucmd := &repcmd.UnloadCmd{Base: base}
+				ucmd.UnitTag = repcmd.UnitTag(sr.getUint16())
+				sr.getUint16() // Unknown, always 0?
+				cmd = ucmd
+
+			case repcmd.TypeIDSelect121, repcmd.TypeIDSelectAdd121, repcmd.TypeIDSelectRemove121:
 				count := sr.getByte()
 				selectCmd := &repcmd.SelectCmd{
 					Base:     base,
@@ -544,12 +556,6 @@ func parseCommands(data []byte, r *rep.Replay) error {
 					sr.getUint16() // Unknown, always 0?
 				}
 				cmd = selectCmd
-			case 0x64, 0x65:
-				count := sr.getByte()
-				cmd = &repcmd.GeneralCmd{
-					Base: base,
-					Data: sr.readSlice(uint32(count) * 4),
-				}
 
 			default:
 				// We don't know how to parse this command, we have to skip

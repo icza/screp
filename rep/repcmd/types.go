@@ -77,7 +77,12 @@ const (
 	TypeIDMergeDarkArchon    byte = 0x5a
 	TypeIDMakeGamePublic     byte = 0x5b
 	TypeIDChat               byte = 0x5c
+	TypeIDRightClick121      byte = 0x60
+	TypeIDTargetedOrder121   byte = 0x61
+	TypeIDUnload121          byte = 0x62
 	TypeIDSelect121          byte = 0x63
+	TypeIDSelectAdd121       byte = 0x64
+	TypeIDSelectRemove121    byte = 0x65
 )
 
 // Type describes the command type.
@@ -161,7 +166,12 @@ var Types = []*Type{
 	{e("Merge Dark Archon"), TypeIDMergeDarkArchon},
 	{e("Make Game Public"), TypeIDMakeGamePublic},
 	{e("Chat"), TypeIDChat},
-	{e("Select121"), TypeIDSelect121},
+	{e("Right Click 121"), TypeIDRightClick121},
+	{e("Targeted Order 121"), TypeIDTargetedOrder121},
+	{e("Unload 121"), TypeIDUnload121},
+	{e("Select 121"), TypeIDSelect121},
+	{e("Select Add 121"), TypeIDSelectAdd121},
+	{e("Select Remove 121"), TypeIDSelectRemove121},
 }
 
 // Named command types
@@ -237,7 +247,12 @@ var (
 	TypeMergeDarkArchon    = Types[68]
 	TypeMakeGamePublic     = Types[69]
 	TypeChat               = Types[70]
-	TypeSelect121          = Types[71]
+	TypeRightClick121      = Types[71]
+	TypeTargetedOrder121   = Types[72]
+	TypeUnload121          = Types[73]
+	TypeSelect121          = Types[74]
+	TypeSelectAdd121       = Types[75]
+	TypeSelectRemove121    = Types[76]
 )
 
 // typeIDType maps from type ID to type.
