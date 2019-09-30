@@ -155,6 +155,14 @@ type RightClickCmd struct {
 	Queued bool
 }
 
+// UnloadCmd describes an unload command.
+type UnloadCmd struct {
+	*Base
+
+	// UnitTag is the unloaded unit's tag if it's valid.
+	UnitTag UnitTag
+}
+
 // TargetedOrderCmd describes a targeted order command. Type: TypeTargetedOrder
 type TargetedOrderCmd struct {
 	*Base
