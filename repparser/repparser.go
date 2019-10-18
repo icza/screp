@@ -622,7 +622,10 @@ func parseMapData(data []byte, r *rep.Replay) error {
 			// The first one is the biggest (whole map size),
 			// but the beginning of map is empty. The subsequent MTXM
 			// sub-sections will fill the whole at the beginning.
-			if len(md.Tiles) == 0 {
+			// An example was found when the first MTXM section was only
+			// 8 elements, and the next was the whole map, beginning also filled.
+			// Therefore if currently allocated Tile is small, a new one is allocated.
+			if len(md.Tiles) < int(maxI) {
 				md.Tiles = make([]uint16, maxI)
 			}
 			for i := uint32(0); i < maxI; i++ {
