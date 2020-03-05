@@ -12,7 +12,7 @@ type Computed struct {
 	// LeaveGameCmds of the players.
 	LeaveGameCmds []*repcmd.LeaveGameCmd
 
-	// ChatCmds is a collection of the player chat.
+	// ChatCmds is a collection of the received chat messages.
 	ChatCmds []*repcmd.ChatCmd
 
 	// WinnerTeam if can be detected by the "largest remaining team wins"
