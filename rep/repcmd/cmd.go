@@ -191,7 +191,8 @@ type MinimapPingCmd struct {
 	Pos repcore.Point
 }
 
-// ChatCmd describes an in-game chat command. Type: TypeChat
+// ChatCmd describes an in-game receive chat command. Type: TypeChat
+// Owner of the command receives the message sent by the user identified by SenderSlotID.
 type ChatCmd struct {
 	*Base
 
