@@ -56,7 +56,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.3.1"
+	Version = "v1.4.0"
 )
 
 var (
@@ -386,7 +386,7 @@ func parseCommands(data []byte, r *rep.Replay) error {
 
 			case repcmd.TypeIDChat:
 				chatCmd := &repcmd.ChatCmd{Base: base}
-				chatCmd.TargetPlayerID = sr.getByte()
+				chatCmd.SenderSlotID = sr.getByte()
 				chatCmd.Message = cString(sr.readSlice(80))
 				cmd = chatCmd
 

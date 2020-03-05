@@ -195,8 +195,8 @@ type MinimapPingCmd struct {
 type ChatCmd struct {
 	*Base
 
-	// TargetPlayerID tells who was the message sent to.
-	TargetPlayerID byte
+	// SenderSlotID tells the slot ID of the message sender.
+	SenderSlotID byte
 
 	// Message sent.
 	Message string
