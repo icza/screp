@@ -59,6 +59,8 @@ type Header struct {
 	Players []*Player
 
 	// PIDPlayers maps from player ID to Player.
+	// Note: all computer players have ID=255, so this won't be accurate for
+	// computer players.
 	PIDPlayers map[byte]*Player `json:"-"`
 }
 
@@ -111,7 +113,8 @@ type Player struct {
 	// SlotID is the slot ID
 	SlotID uint16
 
-	// ID of the player
+	// ID of the player.
+	// Computer players all have ID=255.
 	ID byte
 
 	// Type is the player type
