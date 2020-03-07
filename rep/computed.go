@@ -23,6 +23,8 @@ type Computed struct {
 	PlayerDescs []*PlayerDesc
 
 	// PIDPlayerDescs maps from player ID to PlayerDesc.
+	// Note: all computer players have ID=255, so this won't be accurate for
+	// computer players.
 	PIDPlayerDescs map[byte]*PlayerDesc `json:"-"`
 }
 
