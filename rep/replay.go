@@ -53,7 +53,11 @@ func (r *Replay) Compute() {
 	if r.Commands != nil {
 		cmds := r.Commands.Cmds
 		for _, cmd := range cmds {
-			c.PIDPlayerDescs[cmd.BaseCmd().PlayerID].CmdCount++
+			// Observers' commands (e.g. chat) have PlayerID starting with 128 (2nd obs 129 etc.)
+			// We don't have PlayerDescs for them, so must check:
+			if pd := c.PIDPlayerDescs[cmd.BaseCmd().PlayerID]; pd != nil {
+				c.PIDPlayerDescs[cmd.BaseCmd().PlayerID].CmdCount++
+			}
 			switch x := cmd.(type) {
 			case *repcmd.LeaveGameCmd:
 				c.LeaveGameCmds = append(c.LeaveGameCmds, x)
