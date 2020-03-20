@@ -3,8 +3,8 @@
 package rep
 
 import (
-	"bytes"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/icza/screp/rep/repcore"
@@ -92,7 +92,7 @@ func (h *Header) Matchup() string {
 // PlayerNames returns a comma separated list of player names in team order,
 // inserting " VS " between different teams.
 func (h *Header) PlayerNames() string {
-	buf := &bytes.Buffer{}
+	buf := &strings.Builder{}
 	var prevTeam byte
 	for i, p := range h.Players {
 		if i > 0 {
