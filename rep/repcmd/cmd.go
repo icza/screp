@@ -284,7 +284,7 @@ type ChatCmd struct {
 
 // Params implements Cmd.Params().
 func (cc *ChatCmd) Params() string {
-	return fmt.Sprintf("SenderSlotID: %d, Message: \"%q\"", cc.SenderSlotID, cc.Message)
+	return fmt.Sprintf("SenderSlotID: %d, Message: %q", cc.SenderSlotID, cc.Message)
 }
 
 // CancelTrainCmd describes a cancel train command. Type: TypeCancelTrain
