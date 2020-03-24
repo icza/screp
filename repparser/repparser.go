@@ -269,12 +269,12 @@ func parseHeader(data []byte, r *rep.Replay) error {
 			p.Color = repcore.ColorByID(bo.Uint32(data[0x251+i*4:]))
 		}
 
-		h.PIDPlayers[p.ID] = p
-
 		// Filter real players:
 		if p.Name != "" {
 			h.OrigPlayers = append(h.OrigPlayers, p)
+			h.PIDPlayers[p.ID] = p
 		}
+
 	}
 
 	// Fill Players in team order:
