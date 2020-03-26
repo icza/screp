@@ -149,13 +149,12 @@ type BuildCmd struct {
 
 // Params implements Cmd.Params().
 func (bc *BuildCmd) Params(verbose bool) string {
-	return fmt.Sprintf(
-		c(verbose,
-			"Order: %v, Pos: (%v), Unit: %v",
-			"%v, (%v), %v",
-		),
-		bc.Order, bc.Pos, bc.Unit,
-	)
+	if verbose {
+		return fmt.Sprintf("Order: %v, Pos: (%v), Unit: %v", bc.Order, bc.Pos, bc.Unit)
+	}
+
+	// Order is "redundant" (e.g. PlaceProtossBuilding, DroneStartBuild)
+	return fmt.Sprintf("(%v), %v", bc.Pos, bc.Unit)
 }
 
 // GameSpeedCmd describes a set game speed command. Type: TypeGameSpeed
