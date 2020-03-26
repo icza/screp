@@ -4,6 +4,7 @@ package repcmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/icza/screp/rep/repcore"
 )
@@ -19,7 +20,7 @@ type Cmd interface {
 	BaseCmd() *Base
 
 	// Params returns human-readable concrete command-specific parameters.
-	Params() string
+	Params(verbose bool) string
 }
 
 // Base is the base of all player commands.
@@ -40,8 +41,16 @@ func (b *Base) BaseCmd() *Base {
 }
 
 // Params implements Cmd.Params().
-func (b *Base) Params() string {
+func (b *Base) Params(verbose bool) string {
 	return ""
+}
+
+// c is a helper function to choose between 2 formats based on verbosity.
+func c(verbose bool, verboseFmt, nonVerboseFmt string) string {
+	if verbose {
+		return verboseFmt
+	}
+	return nonVerboseFmt
 }
 
 // ParseErrCmd represents a command where parsing error encountered.
@@ -55,10 +64,15 @@ type ParseErrCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (pec *ParseErrCmd) Params() string {
+func (pec *ParseErrCmd) Params(verbose bool) string {
 	prevBase := pec.PrevCmd.BaseCmd()
-	return fmt.Sprintf("PrevCmd: [Frame: %d, PlayerID: %d, Type: %s, Params: [%s]",
-		prevBase.Frame, prevBase.PlayerID, prevBase.Type, pec.PrevCmd.Params())
+	return fmt.Sprintf(
+		c(verbose,
+			"PrevCmd: [Frame: %d, PlayerID: %d, Type: %s, Params: [%s]",
+			"[%d, %d, %s, [%s]",
+		),
+		prevBase.Frame, prevBase.PlayerID, prevBase.Type, pec.PrevCmd.Params(verbose),
+	)
 }
 
 // UnitTag itentifies a unit in the game (engine). Contains its in-game ID and
@@ -90,8 +104,14 @@ type GeneralCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (gc *GeneralCmd) Params() string {
-	return fmt.Sprintf("Data: [% x]", gc.Data)
+func (gc *GeneralCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"Data: [% x]",
+			"[% x]",
+		),
+		gc.Data,
+	)
 }
 
 // SelectCmd describes commands of types: TypeSelect, TypeSelectAdd, TypeSelectRemove
@@ -103,8 +123,14 @@ type SelectCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (sc *SelectCmd) Params() string {
-	return fmt.Sprintf("UnitTags: %x", sc.UnitTags)
+func (sc *SelectCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"UnitTags: %x",
+			"%x",
+		),
+		sc.UnitTags,
+	)
 }
 
 // BuildCmd describes a build command. Type: TypeBuild
@@ -122,8 +148,14 @@ type BuildCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (bc *BuildCmd) Params() string {
-	return fmt.Sprintf("Order: %v, Pos: (%v), Unit: %v", bc.Order, bc.Pos, bc.Unit)
+func (bc *BuildCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"Order: %v, Pos: (%v), Unit: %v",
+			"%v, (%v), %v",
+		),
+		bc.Order, bc.Pos, bc.Unit,
+	)
 }
 
 // GameSpeedCmd describes a set game speed command. Type: TypeGameSpeed
@@ -135,8 +167,14 @@ type GameSpeedCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (gc *GameSpeedCmd) Params() string {
-	return fmt.Sprintf("Speed: %v", gc.Speed)
+func (gc *GameSpeedCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"Speed: %v",
+			"%v",
+		),
+		gc.Speed,
+	)
 }
 
 // HotkeyCmd describes a hotkey command. Type: TypeHotkey
@@ -152,8 +190,14 @@ type HotkeyCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (hc *HotkeyCmd) Params() string {
-	return fmt.Sprintf("HotkeyType: %v, Group: %d", hc.HotkeyType, hc.Group)
+func (hc *HotkeyCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"HotkeyType: %v, Group: %d",
+			"%v, %d",
+		),
+		hc.HotkeyType, hc.Group,
+	)
 }
 
 // LeaveGameCmd describes a leave game command. Type: TypeLeaveGame
@@ -165,8 +209,13 @@ type LeaveGameCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (lgc *LeaveGameCmd) Params() string {
-	return fmt.Sprintf("Reason: %v", lgc.Reason)
+func (lgc *LeaveGameCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"Reason: %v",
+			"%v",
+		), lgc.Reason,
+	)
 }
 
 // TrainCmd describes a train command. Type: TypeTrain, TypeUnitMorph
@@ -178,8 +227,14 @@ type TrainCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (tc *TrainCmd) Params() string {
-	return fmt.Sprintf("Unit: %v", tc.Unit)
+func (tc *TrainCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"Unit: %v",
+			"%v",
+		),
+		tc.Unit,
+	)
 }
 
 // QueueableCmd describes a generic command that holds whether it is queued.
@@ -193,8 +248,14 @@ type QueueableCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (qc *QueueableCmd) Params() string {
-	return fmt.Sprintf("Queued: %t", qc.Queued)
+func (qc *QueueableCmd) Params(verbose bool) string {
+	if verbose {
+		return fmt.Sprintf("Queued: %t", qc.Queued)
+	}
+	if qc.Queued {
+		return "Queued"
+	}
+	return ""
 }
 
 // RightClickCmd represents a right click command. Type: TypeRightClick
@@ -215,8 +276,23 @@ type RightClickCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (rcc *RightClickCmd) Params() string {
-	return fmt.Sprintf("Pos: (%v), UnitTag: %x, Unit: %v, Queued: %t", rcc.Pos, rcc.UnitTag, rcc.Unit, rcc.Queued)
+func (rcc *RightClickCmd) Params(verbose bool) string {
+	if verbose {
+		return fmt.Sprintf("Pos: (%v), UnitTag: %x, Unit: %v, Queued: %t", rcc.Pos, rcc.UnitTag, rcc.Unit, rcc.Queued)
+	}
+
+	b := &strings.Builder{}
+	fmt.Fprintf(b, "(%v)", rcc.Pos)
+	if rcc.UnitTag != 0 {
+		fmt.Fprintf(b, ", %x", rcc.UnitTag)
+	}
+	if rcc.Unit != UnitNone {
+		fmt.Fprintf(b, ", %v", rcc.Unit)
+	}
+	if rcc.Queued {
+		b.WriteString(", Queued")
+	}
+	return b.String()
 }
 
 // UnloadCmd describes an unload command.
@@ -228,8 +304,14 @@ type UnloadCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (uc *UnloadCmd) Params() string {
-	return fmt.Sprintf(" UnitTag: %x", uc.UnitTag)
+func (uc *UnloadCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			" UnitTag: %x",
+			"%x",
+		),
+		uc.UnitTag,
+	)
 }
 
 // TargetedOrderCmd describes a targeted order command. Type: TypeTargetedOrder
@@ -253,8 +335,24 @@ type TargetedOrderCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (toc *TargetedOrderCmd) Params() string {
-	return fmt.Sprintf("Pos: (%v), UnitTag: %x, Unit: %v, Order: %v, Queued: %t", toc.Pos, toc.UnitTag, toc.Unit, toc.Order, toc.Queued)
+func (toc *TargetedOrderCmd) Params(verbose bool) string {
+	if verbose {
+		return fmt.Sprintf("Pos: (%v), UnitTag: %x, Unit: %v, Order: %v, Queued: %t", toc.Pos, toc.UnitTag, toc.Unit, toc.Order, toc.Queued)
+	}
+
+	b := &strings.Builder{}
+	fmt.Fprintf(b, "(%v)", toc.Pos)
+	if toc.UnitTag != 0 {
+		fmt.Fprintf(b, ", %x", toc.UnitTag)
+	}
+	if toc.Unit != UnitNone {
+		fmt.Fprintf(b, ", %v", toc.Unit)
+	}
+	fmt.Fprintf(b, ", %v", toc.Order)
+	if toc.Queued {
+		b.WriteString(", Queued")
+	}
+	return b.String()
 }
 
 // MinimapPingCmd describes a minimap ping command. Type: TypeMinimapPing
@@ -266,8 +364,14 @@ type MinimapPingCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (mpc *MinimapPingCmd) Params() string {
-	return fmt.Sprintf("Pos: (%v)", mpc.Pos)
+func (mpc *MinimapPingCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"Pos: (%v)",
+			"(%v)",
+		),
+		mpc.Pos,
+	)
 }
 
 // ChatCmd describes an in-game receive chat command. Type: TypeChat
@@ -283,8 +387,14 @@ type ChatCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (cc *ChatCmd) Params() string {
-	return fmt.Sprintf("SenderSlotID: %d, Message: %q", cc.SenderSlotID, cc.Message)
+func (cc *ChatCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"SenderSlotID: %d, Message: %q",
+			"%d, %q",
+		),
+		cc.SenderSlotID, cc.Message,
+	)
 }
 
 // CancelTrainCmd describes a cancel train command. Type: TypeCancelTrain
@@ -296,8 +406,14 @@ type CancelTrainCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (ctc *CancelTrainCmd) Params() string {
-	return fmt.Sprintf("UnitTag: %x", ctc.UnitTag)
+func (ctc *CancelTrainCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"UnitTag: %x",
+			"%x",
+		),
+		ctc.UnitTag,
+	)
 }
 
 // BuildingMorphCmd describes a building morph command. Type: TypeBuildingMorph
@@ -309,8 +425,14 @@ type BuildingMorphCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (bmc *BuildingMorphCmd) Params() string {
-	return fmt.Sprintf("Unit: %v", bmc.Unit)
+func (bmc *BuildingMorphCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"Unit: %v",
+			"%v",
+		),
+		bmc.Unit,
+	)
 }
 
 // LiftOffCmd describes a lift off command. Type: TypeLiftOff
@@ -322,8 +444,13 @@ type LiftOffCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (loc *LiftOffCmd) Params() string {
-	return fmt.Sprintf("Pos: (%v)", loc.Pos)
+func (loc *LiftOffCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"Pos: (%v)",
+			"(%v)",
+		), loc.Pos,
+	)
 }
 
 // TechCmd describes a tech (research) command. Type: TypeTech
@@ -335,8 +462,14 @@ type TechCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (tc *TechCmd) Params() string {
-	return fmt.Sprintf("Tech: %v", tc.Tech)
+func (tc *TechCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"Tech: %v",
+			"%v",
+		),
+		tc.Tech,
+	)
 }
 
 // UpgradeCmd describes an upgrade command. Type: TypeUpgrade
@@ -348,8 +481,13 @@ type UpgradeCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (uc *UpgradeCmd) Params() string {
-	return fmt.Sprintf("Upgrade: %v", uc.Upgrade)
+func (uc *UpgradeCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"Upgrade: %v",
+			"%v",
+		), uc.Upgrade,
+	)
 }
 
 // LatencyCmd describes a latency change command. Type: TypeLatency
@@ -361,6 +499,11 @@ type LatencyCmd struct {
 }
 
 // Params implements Cmd.Params().
-func (lc *LatencyCmd) Params() string {
-	return fmt.Sprintf("Latency: %v", lc.Latency)
+func (lc *LatencyCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"Latency: %v",
+			"%v",
+		), lc.Latency,
+	)
 }

@@ -252,6 +252,11 @@ func init() {
 	}
 }
 
+// Named Units
+var (
+	UnitNone = unitIDUnit[0xE4]
+)
+
 // UnitByID returns the Unit for a given ID.
 // A new Unit with Unknown name is returned if one is not found
 // for the given ID (preserving the unknown ID).
