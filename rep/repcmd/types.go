@@ -166,12 +166,12 @@ var Types = []*Type{
 	{e("Merge Dark Archon"), TypeIDMergeDarkArchon},
 	{e("Make Game Public"), TypeIDMakeGamePublic},
 	{e("Chat"), TypeIDChat},
-	{e("Right Click 121"), TypeIDRightClick121},
-	{e("Targeted Order 121"), TypeIDTargetedOrder121},
-	{e("Unload 121"), TypeIDUnload121},
-	{e("Select 121"), TypeIDSelect121},
-	{e("Select Add 121"), TypeIDSelectAdd121},
-	{e("Select Remove 121"), TypeIDSelectRemove121},
+	{e("Right Click"), TypeIDRightClick121},
+	{e("Targeted Order"), TypeIDTargetedOrder121},
+	{e("Unload"), TypeIDUnload121},
+	{e("Select"), TypeIDSelect121},
+	{e("Select Add"), TypeIDSelectAdd121},
+	{e("Select Remove"), TypeIDSelectRemove121},
 }
 
 // Named command types
