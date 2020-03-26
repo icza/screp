@@ -254,7 +254,7 @@ func init() {
 
 // Named Units
 var (
-	UnitNone = unitIDUnit[0xE4]
+	UnitNone = UnitByID(0xE4)
 )
 
 // UnitByID returns the Unit for a given ID.
