@@ -250,11 +250,13 @@ func init() {
 	for _, u := range Units {
 		unitIDUnit[u.ID] = u
 	}
+
+	UnitNone = unitIDUnit[0xE4]
 }
 
 // Named Units
 var (
-	UnitNone = UnitByID(0xE4)
+	UnitNone *Unit
 )
 
 // UnitByID returns the Unit for a given ID.
