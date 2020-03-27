@@ -27,6 +27,12 @@ func (f Frame) Duration() time.Duration {
 	return time.Millisecond * time.Duration(f.Milliseconds())
 }
 
+// String returns a human-friendly mm:ss representation, e.g. "03:12".
+func (f Frame) String() string {
+	sec := f.Milliseconds() / 1000
+	return fmt.Sprintf("%02d:%02d", sec/60, sec%60)
+}
+
 // Point describes a point in the map.
 type Point struct {
 	// X and Y coordinates of the point
