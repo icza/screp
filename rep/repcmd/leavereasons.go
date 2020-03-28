@@ -26,8 +26,9 @@ var LeaveReasons = []*LeaveReason{
 // A new LeaveReason with Unknown name is returned if one is not found
 // for the given ID (preserving the unknown ID).
 func LeaveReasonByID(ID byte) *LeaveReason {
-	if int(ID) < len(LeaveReasons) {
-		return LeaveReasons[ID]
+	// Known reason IDs start from 1!
+	if ID > 0 && int(ID) <= len(LeaveReasons) {
+		return LeaveReasons[ID-1]
 	}
 	return &LeaveReason{repcore.UnknownEnum(ID), ID}
 }
