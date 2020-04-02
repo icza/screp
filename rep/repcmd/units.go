@@ -254,24 +254,6 @@ func init() {
 
 // Unit IDs
 const (
-	UnitIDInfestedCC       = 0x82
-	UnitIDHatchery         = 0x83
-	UnitIDLair             = 0x84
-	UnitIDHive             = 0x85
-	UnitIDNydusCanal       = 0x86
-	UnitIDHydraliskDen     = 0x87
-	UnitIDDefilerMound     = 0x88
-	UnitIDGreaterSpire     = 0x89
-	UnitIDQueensNest       = 0x8A
-	UnitIDEvolutionChamber = 0x8B
-	UnitIDUltraliskCavern  = 0x8C
-	UnitIDSpire            = 0x8D
-	UnitIDSpawningPool     = 0x8E
-	UnitIDCreepColony      = 0x8F
-	UnitIDSporeColony      = 0x90
-	UnitIDSunkenColony     = 0x92
-	UnitIDExtractor        = 0x95
-
 	UnitIDCommandCenter   = 0x6A
 	UnitIDComSat          = 0x6B
 	UnitIDNuclearSilo     = 0x6C
@@ -290,6 +272,24 @@ const (
 	UnitIDArmory          = 0x7B
 	UnitIDMissileTurret   = 0x7C
 	UnitIDBunker          = 0x7D
+
+	UnitIDInfestedCC       = 0x82
+	UnitIDHatchery         = 0x83
+	UnitIDLair             = 0x84
+	UnitIDHive             = 0x85
+	UnitIDNydusCanal       = 0x86
+	UnitIDHydraliskDen     = 0x87
+	UnitIDDefilerMound     = 0x88
+	UnitIDGreaterSpire     = 0x89
+	UnitIDQueensNest       = 0x8A
+	UnitIDEvolutionChamber = 0x8B
+	UnitIDUltraliskCavern  = 0x8C
+	UnitIDSpire            = 0x8D
+	UnitIDSpawningPool     = 0x8E
+	UnitIDCreepColony      = 0x8F
+	UnitIDSporeColony      = 0x90
+	UnitIDSunkenColony     = 0x92
+	UnitIDExtractor        = 0x95
 
 	UnitIDNexus              = 0x9A
 	UnitIDRoboticsFacility   = 0x9B
