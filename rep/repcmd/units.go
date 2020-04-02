@@ -250,13 +250,71 @@ func init() {
 	for _, u := range Units {
 		unitIDUnit[u.ID] = u
 	}
-
-	UnitNone = unitIDUnit[0xE4]
 }
 
-// Named Units
-var (
-	UnitNone *Unit
+// Unit IDs
+const (
+	UnitIDInfestedCC       = 0x82
+	UnitIDHatchery         = 0x83
+	UnitIDLair             = 0x84
+	UnitIDHive             = 0x85
+	UnitIDNydusCanal       = 0x86
+	UnitIDHydraliskDen     = 0x87
+	UnitIDDefilerMound     = 0x88
+	UnitIDGreaterSpire     = 0x89
+	UnitIDQueensNest       = 0x8A
+	UnitIDEvolutionChamber = 0x8B
+	UnitIDUltraliskCavern  = 0x8C
+	UnitIDSpire            = 0x8D
+	UnitIDSpawningPool     = 0x8E
+	UnitIDCreepColony      = 0x8F
+	UnitIDSporeColony      = 0x90
+	UnitIDSunkenColony     = 0x92
+	UnitIDExtractor        = 0x95
+
+	UnitIDCommandCenter   = 0x6A
+	UnitIDComSat          = 0x6B
+	UnitIDNuclearSilo     = 0x6C
+	UnitIDSupplyDepot     = 0x6D
+	UnitIDRefinery        = 0x6E
+	UnitIDBarracks        = 0x6F
+	UnitIDAcademy         = 0x70
+	UnitIDFactory         = 0x71
+	UnitIDStarport        = 0x72
+	UnitIDControlTower    = 0x73
+	UnitIDScienceFacility = 0x74
+	UnitIDCovertOps       = 0x75
+	UnitIDPhysicsLab      = 0x76
+	UnitIDMachineShop     = 0x78
+	UnitIDEngineeringBay  = 0x7A
+	UnitIDArmory          = 0x7B
+	UnitIDMissileTurret   = 0x7C
+	UnitIDBunker          = 0x7D
+
+	UnitIDNexus              = 0x9A
+	UnitIDRoboticsFacility   = 0x9B
+	UnitIDPylon              = 0x9C
+	UnitIDAssimilator        = 0x9D
+	UnitIDObservatory        = 0x9F
+	UnitIDGateway            = 0xA0
+	UnitIDPhotonCannon       = 0xA2
+	UnitIDCitadelOfAdun      = 0xA3
+	UnitIDCyberneticsCore    = 0xA4
+	UnitIDTemplarArchives    = 0xA5
+	UnitIDForge              = 0xA6
+	UnitIDStargate           = 0xA7
+	UnitIDFleetBeacon        = 0xA9
+	UnitIDArbiterTribunal    = 0xAA
+	UnitIDRoboticsSupportBay = 0xAB
+	UnitIDShieldBattery      = 0xAC
+
+	UnitIDMineralField1 = 0xB0
+	UnitIDMineralField2 = 0xB1
+	UnitIDMineralField3 = 0xB2
+	UnitIDVespeneGeyser = 0xBC
+	UnitIDStartLocation = 0xD6
+
+	UnitIDNone = 0xE4
 )
 
 // UnitByID returns the Unit for a given ID.

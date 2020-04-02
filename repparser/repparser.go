@@ -632,14 +632,6 @@ func parseMapData(data []byte, r *rep.Replay) error {
 				md.Tiles[i] = sr.getUint16()
 			}
 		case "UNIT": // Unit sub-section
-			// TODO When all UnitIDs (enums) are introduced, use those
-			const (
-				unitIDMinField1  = 0xb0
-				unitIDMinField2  = 0xb1
-				unitIDMinField3  = 0xb2
-				unitIDVespGeyser = 0xbc
-				unitIDStartLoc   = 0xd6
-			)
 			for sr.pos < ssEndPos {
 				unitEndPos := sr.pos + 36 // 36 bytes for each unit
 
@@ -653,11 +645,11 @@ func parseMapData(data []byte, r *rep.Replay) error {
 				ownerID := sr.getByte() // 0-based SlotID
 
 				switch unitID {
-				case unitIDMinField1, unitIDMinField2, unitIDMinField3:
+				case repcmd.UnitIDMineralField1, repcmd.UnitIDMineralField2, repcmd.UnitIDMineralField3:
 					md.MineralFields = append(md.MineralFields, repcore.Point{X: x, Y: y})
-				case unitIDVespGeyser:
+				case repcmd.UnitIDVespeneGeyser:
 					md.Geysers = append(md.Geysers, repcore.Point{X: x, Y: y})
-				case unitIDStartLoc:
+				case repcmd.UnitIDStartLocation:
 					md.StartLocations = append(md.StartLocations,
 						rep.StartLocation{Point: repcore.Point{X: x, Y: y}, SlotID: ownerID},
 					)

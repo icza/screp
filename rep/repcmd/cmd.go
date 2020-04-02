@@ -285,7 +285,7 @@ func (rcc *RightClickCmd) Params(verbose bool) string {
 	if rcc.UnitTag != 0 {
 		fmt.Fprintf(b, ", %x", rcc.UnitTag)
 	}
-	if rcc.Unit != UnitNone {
+	if rcc.Unit.ID != UnitIDNone {
 		fmt.Fprintf(b, ", %v", rcc.Unit)
 	}
 	if rcc.Queued {
@@ -344,7 +344,7 @@ func (toc *TargetedOrderCmd) Params(verbose bool) string {
 	if toc.UnitTag != 0 {
 		fmt.Fprintf(b, ", %x", toc.UnitTag)
 	}
-	if toc.Unit != UnitNone {
+	if toc.Unit.ID != UnitIDNone {
 		fmt.Fprintf(b, ", %v", toc.Unit)
 	}
 	fmt.Fprintf(b, ", %v", toc.Order)
