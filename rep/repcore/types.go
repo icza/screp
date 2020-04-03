@@ -27,10 +27,15 @@ func (f Frame) Duration() time.Duration {
 	return time.Millisecond * time.Duration(f.Milliseconds())
 }
 
-// String returns a human-friendly mm:ss representation, e.g. "03:12".
+// String returns a human-friendly mm:ss representation, e.g. "03:12",
+// or if the frame represents bigger than an hour: "1:02:03".
 func (f Frame) String() string {
 	sec := f.Milliseconds() / 1000
-	return fmt.Sprintf("%02d:%02d", sec/60, sec%60)
+	min := sec / 60
+	if min < 60 {
+		return fmt.Sprintf("%02d:%02d", min, sec%60)
+	}
+	return fmt.Sprintf("%d:%02d:%02d", min/60, min%60, sec%60)
 }
 
 // Point describes a point in the map.
