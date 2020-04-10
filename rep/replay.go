@@ -61,7 +61,7 @@ func (r *Replay) Compute() {
 			switch x := cmd.(type) {
 			case *repcmd.LeaveGameCmd:
 				c.LeaveGameCmds = append(c.LeaveGameCmds, x)
-				teamSizes[r.Header.PIDPlayers[x.PlayerID].ID]--
+				teamSizes[r.Header.PIDPlayers[x.PlayerID].Team]--
 			case *repcmd.ChatCmd:
 				c.ChatCmds = append(c.ChatCmds, x)
 			}
