@@ -100,7 +100,7 @@ func (r *Replay) Compute() {
 		}
 		// Are winners detectable?
 		if maxSize > 0 {
-			// Are there only one team with max size?
+			// Is there only one team with max size?
 			count := 0
 			for _, size := range teamSizes {
 				if size == maxSize {
