@@ -561,7 +561,11 @@ func parseCommands(data []byte, r *rep.Replay) error {
 				// We don't know how to parse this command, we have to skip
 				// to the end of the command block
 				// (potentially skipping additional commands...)
-				fmt.Printf("skipping typeID: %#v, frame: %d, playerID: %d, remaining bytes: %d [% x]\n", base.Type.ID, base.Frame, base.PlayerID, cmdBlockEndPos-sr.pos, sr.b[sr.pos:cmdBlockEndPos])
+				var remBytes []byte
+				if sr.pos <= cmdBlockEndPos { // Sometimes sr.pos > cmdBlockEndPos...
+					remBytes = sr.b[sr.pos:cmdBlockEndPos]
+				}
+				fmt.Printf("skipping typeID: %#v, frame: %d, playerID: %d, remaining bytes: %d [% x]\n", base.Type.ID, base.Frame, base.PlayerID, cmdBlockEndPos-sr.pos, remBytes)
 				pec := &repcmd.ParseErrCmd{Base: base}
 				if len(cs.Cmds) > 0 {
 					pec.PrevCmd = cs.Cmds[len(cs.Cmds)-1]
