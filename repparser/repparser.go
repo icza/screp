@@ -562,7 +562,7 @@ func parseCommands(data []byte, r *rep.Replay) error {
 				// to the end of the command block
 				// (potentially skipping additional commands...)
 				var remBytes []byte
-				if sr.pos <= cmdBlockEndPos { // Sometimes sr.pos > cmdBlockEndPos...
+				if sr.pos <= cmdBlockEndPos && cmdBlockEndPos <= uint32(len(sr.b)) { // Due to "bad" parsing these must be checked...
 					remBytes = sr.b[sr.pos:cmdBlockEndPos]
 				}
 				fmt.Printf("skipping typeID: %#v, frame: %d, playerID: %d, remaining bytes: %d [% x]\n", base.Type.ID, base.Frame, base.PlayerID, cmdBlockEndPos-sr.pos, remBytes)
