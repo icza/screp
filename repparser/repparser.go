@@ -56,7 +56,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.4.0"
+	Version = "v1.4.1"
 )
 
 var (
@@ -69,42 +69,65 @@ var (
 	ErrParsing = errors.New("parsing")
 )
 
+// Config holds parser configuration.
+type Config struct {
+	// Commands tells if the commands section is to be parsed
+	Commands bool
+
+	// MapData tells if the map data section is to be parsed
+	MapData bool
+
+	_ struct{} // To prevent unkeyed literals
+}
+
 // ParseFile parses all sections from an SC:BW replay file.
 func ParseFile(name string) (r *rep.Replay, err error) {
-	return ParseFileSections(name, true, true)
+	return ParseFileConfig(name, Config{Commands: true, MapData: true})
 }
 
 // ParseFileSections parses an SC:BW replay file.
 // Parsing commands and map data sections depends on the given parameters.
 // Replay ID and header sections are always parsed.
 func ParseFileSections(name string, commands, mapData bool) (r *rep.Replay, err error) {
+	return ParseFileConfig(name, Config{Commands: commands, MapData: mapData})
+}
+
+// ParseFileConfig parses an SC:BW replay file based on the given parser configuration.
+// Replay ID and header sections are always parsed.
+func ParseFileConfig(name string, cfg Config) (r *rep.Replay, err error) {
 	dec, err := repdecoder.NewFromFile(name)
 	if err != nil {
 		return nil, err
 	}
 	defer dec.Close()
 
-	return parseProtected(dec, commands, mapData)
+	return parseProtected(dec, cfg)
 }
 
 // Parse parses all sections of an SC:BW replay from the given byte slice.
 func Parse(repData []byte) (*rep.Replay, error) {
-	return ParseSections(repData, true, true)
+	return ParseConfig(repData, Config{Commands: true, MapData: true})
 }
 
 // ParseSections parses an SC:BW replay from the given byte slice.
 // Parsing commands and map data sections depends on the given parameters.
 // Replay ID and header sections are always parsed.
 func ParseSections(repData []byte, commands, mapData bool) (*rep.Replay, error) {
+	return ParseConfig(repData, Config{Commands: commands, MapData: mapData})
+}
+
+// ParseConfig parses an SC:BW replay from the given byte sice based on the given parser configuration.
+// Replay ID and header sections are always parsed.
+func ParseConfig(repData []byte, cfg Config) (*rep.Replay, error) {
 	dec := repdecoder.New(repData)
 	defer dec.Close()
 
-	return parseProtected(dec, commands, mapData)
+	return parseProtected(dec, cfg)
 }
 
 // parseProtected calls parse(), but protects the function call from panics,
 // in which case it returns ErrParsing.
-func parseProtected(dec repdecoder.Decoder, commands, mapData bool) (r *rep.Replay, err error) {
+func parseProtected(dec repdecoder.Decoder, cfg Config) (r *rep.Replay, err error) {
 	// Input is untrusted data, protect the parsing logic.
 	// It also protects against implementation bugs.
 	defer func() {
@@ -117,7 +140,7 @@ func parseProtected(dec repdecoder.Decoder, commands, mapData bool) (r *rep.Repl
 		}
 	}()
 
-	return parse(dec, commands, mapData)
+	return parse(dec, cfg)
 }
 
 // Section describes a Section of the replay.
@@ -151,15 +174,15 @@ var (
 )
 
 // parse parses an SC:BW replay using the given Decoder.
-func parse(dec repdecoder.Decoder, commands, mapData bool) (*rep.Replay, error) {
+func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 	r := new(rep.Replay)
 
 	// Determine last section that needs to be decoded / parsed:
 	var lastSection *Section
 	switch {
-	case mapData:
+	case cfg.MapData:
 		lastSection = SectionMapData
-	case commands:
+	case cfg.Commands:
 		lastSection = SectionCommands
 	default:
 		lastSection = SectionHeader
@@ -192,8 +215,8 @@ func parse(dec repdecoder.Decoder, commands, mapData bool) (*rep.Replay, error) 
 
 		// Need to process?
 		switch {
-		case s == SectionCommands && !commands:
-		case s == SectionMapData && !mapData:
+		case s == SectionCommands && !cfg.Commands:
+		case s == SectionMapData && !cfg.MapData:
 		default:
 			// Process section data
 			if err = s.ParseFunc(data, r); err != nil {
