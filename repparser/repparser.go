@@ -77,6 +77,9 @@ type Config struct {
 	// MapData tells if the map data section is to be parsed
 	MapData bool
 
+	// Debug tells if debug and replay internal binaries is to be retained in the returned Replay.
+	Debug bool
+
 	_ struct{} // To prevent unkeyed literals
 }
 
@@ -154,7 +157,7 @@ type Section struct {
 
 	// ParseFunc defines the function responsible to process (parse / interpret)
 	// the section's data.
-	ParseFunc func(data []byte, r *rep.Replay) error
+	ParseFunc func(data []byte, r *rep.Replay, cfg Config) error
 }
 
 // Sections describes the subsequent Sections of replays
@@ -219,7 +222,7 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 		case s == SectionMapData && !cfg.MapData:
 		default:
 			// Process section data
-			if err = s.ParseFunc(data, r); err != nil {
+			if err = s.ParseFunc(data, r, cfg); err != nil {
 				return nil, fmt.Errorf("ParseFunc() error (sectionID: %d): %v", s.ID, err)
 			}
 		}
@@ -239,7 +242,7 @@ var repIDs = [][]byte{
 }
 
 // parseReplayID processes the replay ID data.
-func parseReplayID(data []byte, r *rep.Replay) (err error) {
+func parseReplayID(data []byte, r *rep.Replay, cfg Config) (err error) {
 	for _, repID := range repIDs {
 		if bytes.Equal(data, repID) {
 			return
@@ -249,12 +252,45 @@ func parseReplayID(data []byte, r *rep.Replay) (err error) {
 	return ErrNotReplayFile
 }
 
+var headerFields = []*rep.DebugFieldDescriptor{
+	{Offset: 0x00, Length: 1, Name: "Engine"},
+	{Offset: 0x01, Length: 4, Name: "Frames"},
+	{Offset: 0x08, Length: 8, Name: "Start time"},
+	{Offset: 0x18, Length: 28, Name: "Title"},
+	{Offset: 0x34, Length: 2, Name: "Map width"},
+	{Offset: 0x36, Length: 2, Name: "Map height"},
+	{Offset: 0x39, Length: 1, Name: "Available slots count"},
+	{Offset: 0x3a, Length: 1, Name: "Speed"},
+	{Offset: 0x3c, Length: 2, Name: "Type"},
+	{Offset: 0x3e, Length: 2, Name: "SubType"},
+	{Offset: 0x48, Length: 24, Name: "Host"},
+	{Offset: 0x61, Length: 26, Name: "Map"},
+	{Offset: 0xa1, Length: 432, Name: "Player structs (12)"},
+	{Offset: 0xa1, Length: 36, Name: "Player 1 struct"},
+	{Offset: 0xa1, Length: 2, Name: "Player 1 slot ID"},
+	{Offset: 0xa1 + 4, Length: 1, Name: "Player 1 ID"},
+	{Offset: 0xa1 + 8, Length: 1, Name: "Player 1 type"},
+	{Offset: 0xa1 + 9, Length: 1, Name: "Player 1 race"},
+	{Offset: 0xa1 + 10, Length: 1, Name: "Player 1 team"},
+	{Offset: 0xa1 + 11, Length: 25, Name: "Player 1 name"},
+	{Offset: 0xa1 + 36, Length: 36, Name: "Player 2 struct"},
+	{Offset: 0x251, Length: 8 * 4, Name: "Player colors (8)"},
+	{Offset: 0x251, Length: 4, Name: "Player 1 color"},
+	{Offset: 0x251 + 4, Length: 4, Name: "Player 2 color"},
+}
+
 // parseHeader processes the replay header data.
-func parseHeader(data []byte, r *rep.Replay) error {
+func parseHeader(data []byte, r *rep.Replay, cfg Config) error {
 	bo := binary.LittleEndian // ByteOrder reader: little-endian
 
 	h := new(rep.Header)
 	r.Header = h
+	if cfg.Debug {
+		h.Debug = &rep.HeaderDebug{
+			Data:   data,
+			Fields: headerFields,
+		}
+	}
 
 	h.Engine = repcore.EngineByID(data[0x00])
 	h.Frames = repcore.Frame(bo.Uint32(data[0x01:]))
@@ -311,12 +347,15 @@ func parseHeader(data []byte, r *rep.Replay) error {
 }
 
 // parseCommands processes the players' commands data.
-func parseCommands(data []byte, r *rep.Replay) error {
+func parseCommands(data []byte, r *rep.Replay, cfg Config) error {
 	bo := binary.LittleEndian // ByteOrder reader: little-endian
 
 	_ = bo
 	cs := new(rep.Commands)
 	r.Commands = cs
+	if cfg.Debug {
+		cs.Debug = &rep.CommandsDebug{Data: data}
+	}
 
 	for sr, size := (sliceReader{b: data}), uint32(len(data)); sr.pos < size; {
 		frame := sr.getUint32()
@@ -614,9 +653,12 @@ func parseCommands(data []byte, r *rep.Replay) error {
 }
 
 // parseMapData processes the map data data.
-func parseMapData(data []byte, r *rep.Replay) error {
+func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 	md := new(rep.MapData)
 	r.MapData = md
+	if cfg.Debug {
+		md.Debug = &rep.MapDataDebug{Data: data}
+	}
 
 	// Map data section is a sequence of sub-sections:
 	for sr, size := (sliceReader{b: data}), uint32(len(data)); sr.pos < size; {

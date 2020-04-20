@@ -13,4 +13,13 @@ type Commands struct {
 	// A parse error command may imply additional skipped (not recorded) commands
 	// at the same frame.
 	ParseErrCmds []*repcmd.ParseErrCmd
+
+	// Debug holds optional debug info.
+	Debug *CommandsDebug `json:"-"`
+}
+
+// CommandsDebug holds debug info for the commands section.
+type CommandsDebug struct {
+	// Data is the raw, uncompressed data of the section.
+	Data []byte
 }

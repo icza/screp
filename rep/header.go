@@ -62,6 +62,9 @@ type Header struct {
 	// Note: all computer players have ID=255, so this won't be accurate for
 	// computer players.
 	PIDPlayers map[byte]*Player `json:"-"`
+
+	// Debug holds optional debug info.
+	Debug *HeaderDebug `json:"-"`
 }
 
 // Duration returns the game duration.
@@ -131,4 +134,20 @@ type Player struct {
 
 	// Color of the player
 	Color *repcore.Color
+}
+
+// HeaderDebug holds debug info for the header section.
+type HeaderDebug struct {
+	// Data is the raw, uncompressed data of the section.
+	Data []byte
+
+	// Descriptor fields of the data
+	Fields []*DebugFieldDescriptor
+}
+
+// DebugFieldDescriptor describes some arbitrary data in a byte slice.
+type DebugFieldDescriptor struct {
+	Offset int    // Offset of the data field
+	Length int    // Length of the data field in bytes
+	Name   string // Name of the data field
 }
