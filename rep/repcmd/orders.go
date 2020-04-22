@@ -215,3 +215,12 @@ func OrderByID(ID byte) *Order {
 	}
 	return &Order{repcore.UnknownEnum(ID), ID}
 }
+
+// Order IDs
+const (
+	OrderIDUnload           = 0x6f
+	OrderIDMoveUnload       = 0x70
+	OrderIDNukeLaunch       = 0x7d
+	OrderIDCastRecall       = 0x89
+	OrderIDCastScannerSweep = 0x8b
+)
