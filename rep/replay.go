@@ -93,25 +93,45 @@ func (r *Replay) Compute() {
 			delete(pidPlayerDescs, pd.PlayerID)
 		}
 
-		// Complete winners detection: largest remaining team wins:
-		maxTeam, maxSize := byte(0), -1
-		for team, size := range teamSizes {
-			if size > maxSize {
-				maxTeam, maxSize = team, size
-			}
-		}
-		// Are winners detectable?
-		if maxSize > 0 {
-			// Is there only one team with max size?
-			count := 0
-			for _, size := range teamSizes {
-				if size == maxSize {
-					count++
+		// Complete winners detection: largest remaining team wins
+		// (if there were Leave game commands)
+		if len(c.LeaveGameCmds) > 0 {
+			maxTeam, maxSize := byte(0), -1
+			for team, size := range teamSizes {
+				if size > maxSize {
+					maxTeam, maxSize = team, size
 				}
 			}
-			if count == 1 {
-				// We have our winners!
-				c.WinnerTeam = maxTeam
+			// Are winners detectable?
+			if maxSize > 0 {
+				// Is there only one team with max size?
+				count := 0
+				for _, size := range teamSizes {
+					if size == maxSize {
+						count++
+					}
+				}
+				if count == 1 {
+					// We have our winners!
+					c.WinnerTeam = maxTeam
+				}
+			}
+		}
+		// If winners are not detectable and there are no Leave game commands,
+		// it's most likely due to the replay saver left first.
+		// Replay saver is the one who receives the chat messages.
+		// If we have chat commands, declare the replay saver's team the loser.
+		// If there is only one team besides the loser (2 teams altogether), we have our winner.
+		if c.WinnerTeam == 0 && len(c.LeaveGameCmds) == 0 && len(c.ChatCmds) > 0 && len(teamSizes) == 2 {
+			// rep saver might be an ovbserver, so must check if there's a player for him/her:
+			if repSaver := r.Header.PIDPlayers[c.ChatCmds[0].PlayerID]; repSaver != nil {
+				loserTeam := repSaver.Team
+				for team := range teamSizes {
+					if team != loserTeam {
+						c.WinnerTeam = team
+						break
+					}
+				}
 			}
 		}
 
