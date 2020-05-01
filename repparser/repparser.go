@@ -333,7 +333,16 @@ func parseHeader(data []byte, r *rep.Replay, cfg Config) error {
 			h.OrigPlayers = append(h.OrigPlayers, p)
 			h.PIDPlayers[p.ID] = p
 		}
+	}
 
+	// If game type is melee, teams are set to 0.
+	// Heuristic improvements: If 2 players only, change teams to 1 and 2,
+	// and so matchup will be e.g. ZvT instead of ZT,
+	// and winner detection can also work (because teams will be different).
+	if h.Type == repcore.GameTypeMelee && len(h.OrigPlayers) == 2 &&
+		h.OrigPlayers[0].Team == 0 && h.OrigPlayers[1].Team == 0 {
+		h.OrigPlayers[0].Team = 1
+		h.OrigPlayers[1].Team = 2
 	}
 
 	// Fill Players in team order:
