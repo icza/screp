@@ -123,7 +123,7 @@ func (r *Replay) Compute() {
 		// If we have chat commands, declare the replay saver's team the loser.
 		// If there is only one team besides the loser (2 teams altogether), we have our winner.
 		if c.WinnerTeam == 0 && len(c.LeaveGameCmds) == 0 && len(c.ChatCmds) > 0 && len(teamSizes) == 2 {
-			// rep saver might be an ovbserver, so must check if there's a player for him/her:
+			// rep saver might be an observer, so must check if there's a player for him/her:
 			if repSaver := r.Header.PIDPlayers[c.ChatCmds[0].PlayerID]; repSaver != nil {
 				loserTeam := repSaver.Team
 				for team := range teamSizes {
@@ -136,7 +136,7 @@ func (r *Replay) Compute() {
 		}
 		// Also if there are 2 players and 2 Game leave commands,
 		// and they are on different teams, declare the 2nd leaver the winner
-		// (this might be the case if an obs supplied the replay).
+		// (this might be the case if an obs saved the replay).
 		if c.WinnerTeam == 0 && len(r.Header.Players) == 2 && len(c.LeaveGameCmds) == 2 {
 			p1 := r.Header.PIDPlayers[c.LeaveGameCmds[0].PlayerID]
 			p2 := r.Header.PIDPlayers[c.LeaveGameCmds[1].PlayerID]
