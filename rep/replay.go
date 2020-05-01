@@ -134,6 +134,16 @@ func (r *Replay) Compute() {
 				}
 			}
 		}
+		// Also if there are 2 players and 2 Game leave commands,
+		// and they are on different teams, declare the 2nd leaver the winner
+		// (this might be the case if an obs supplied the replay).
+		if c.WinnerTeam == 0 && len(r.Header.Players) == 2 && len(c.LeaveGameCmds) == 2 {
+			p1 := r.Header.PIDPlayers[c.LeaveGameCmds[0].PlayerID]
+			p2 := r.Header.PIDPlayers[c.LeaveGameCmds[1].PlayerID]
+			if p1 != nil && p2 != nil && p1.Team != p2.Team {
+				c.WinnerTeam = p2.Team
+			}
+		}
 
 		// Calculate APMs:
 		for _, pd := range c.PlayerDescs {
