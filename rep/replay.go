@@ -121,6 +121,7 @@ func (r *Replay) Compute() {
 		// it's most likely due to the replay saver left first.
 		// Replay saver is the one who receives the chat messages.
 		// If we have chat commands, declare the replay saver's team the loser.
+		// (Note chat is saved since patch 1.16, released on 2008-11-25.)
 		// If there is only one team besides the loser (2 teams altogether), we have our winner.
 		if c.WinnerTeam == 0 && len(c.LeaveGameCmds) == 0 && len(c.ChatCmds) > 0 && len(teamSizes) == 2 {
 			// rep saver might be an observer, so must check if there's a player for him/her:
