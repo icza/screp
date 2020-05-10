@@ -81,11 +81,17 @@ func (r *Replay) Compute() {
 		}
 		for i := len(cmds) - 1; i >= 0; i-- {
 			cmd := cmds[i]
-			pd := pidPlayerDescs[cmd.BaseCmd().PlayerID]
+			baseCmd := cmd.BaseCmd()
+			pd := pidPlayerDescs[baseCmd.PlayerID]
 			if pd == nil {
 				continue
 			}
-			pd.LastCmdFrame = cmd.BaseCmd().Frame
+			if baseCmd.Frame > r.Header.Frames {
+				// Bad parsing or corrupted replay may result in invalid frames,
+				// do not use such a bad frame.
+				continue
+			}
+			pd.LastCmdFrame = baseCmd.Frame
 			// Optimization: If this was the last player, break:
 			if len(pidPlayerDescs) == 1 {
 				break
