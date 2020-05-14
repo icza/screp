@@ -326,3 +326,70 @@ func UnitByID(ID uint16) *Unit {
 	}
 	return &Unit{repcore.UnknownEnum(ID), ID}
 }
+
+// unitIDRace maps from unit ID to owner race.
+var unitIDRace = map[uint16]*repcore.Race{
+	UnitIDCommandCenter:   repcore.RaceTerran,
+	UnitIDComSat:          repcore.RaceTerran,
+	UnitIDNuclearSilo:     repcore.RaceTerran,
+	UnitIDSupplyDepot:     repcore.RaceTerran,
+	UnitIDRefinery:        repcore.RaceTerran,
+	UnitIDBarracks:        repcore.RaceTerran,
+	UnitIDAcademy:         repcore.RaceTerran,
+	UnitIDFactory:         repcore.RaceTerran,
+	UnitIDStarport:        repcore.RaceTerran,
+	UnitIDControlTower:    repcore.RaceTerran,
+	UnitIDScienceFacility: repcore.RaceTerran,
+	UnitIDCovertOps:       repcore.RaceTerran,
+	UnitIDPhysicsLab:      repcore.RaceTerran,
+	UnitIDMachineShop:     repcore.RaceTerran,
+	UnitIDEngineeringBay:  repcore.RaceTerran,
+	UnitIDArmory:          repcore.RaceTerran,
+	UnitIDMissileTurret:   repcore.RaceTerran,
+	UnitIDBunker:          repcore.RaceTerran,
+
+	UnitIDInfestedCC:       repcore.RaceZerg,
+	UnitIDHatchery:         repcore.RaceZerg,
+	UnitIDLair:             repcore.RaceZerg,
+	UnitIDHive:             repcore.RaceZerg,
+	UnitIDNydusCanal:       repcore.RaceZerg,
+	UnitIDHydraliskDen:     repcore.RaceZerg,
+	UnitIDDefilerMound:     repcore.RaceZerg,
+	UnitIDGreaterSpire:     repcore.RaceZerg,
+	UnitIDQueensNest:       repcore.RaceZerg,
+	UnitIDEvolutionChamber: repcore.RaceZerg,
+	UnitIDUltraliskCavern:  repcore.RaceZerg,
+	UnitIDSpire:            repcore.RaceZerg,
+	UnitIDSpawningPool:     repcore.RaceZerg,
+	UnitIDCreepColony:      repcore.RaceZerg,
+	UnitIDSporeColony:      repcore.RaceZerg,
+	UnitIDSunkenColony:     repcore.RaceZerg,
+	UnitIDExtractor:        repcore.RaceZerg,
+
+	UnitIDNexus:              repcore.RaceProtoss,
+	UnitIDRoboticsFacility:   repcore.RaceProtoss,
+	UnitIDPylon:              repcore.RaceProtoss,
+	UnitIDAssimilator:        repcore.RaceProtoss,
+	UnitIDObservatory:        repcore.RaceProtoss,
+	UnitIDGateway:            repcore.RaceProtoss,
+	UnitIDPhotonCannon:       repcore.RaceProtoss,
+	UnitIDCitadelOfAdun:      repcore.RaceProtoss,
+	UnitIDCyberneticsCore:    repcore.RaceProtoss,
+	UnitIDTemplarArchives:    repcore.RaceProtoss,
+	UnitIDForge:              repcore.RaceProtoss,
+	UnitIDStargate:           repcore.RaceProtoss,
+	UnitIDFleetBeacon:        repcore.RaceProtoss,
+	UnitIDArbiterTribunal:    repcore.RaceProtoss,
+	UnitIDRoboticsSupportBay: repcore.RaceProtoss,
+	UnitIDShieldBattery:      repcore.RaceProtoss,
+}
+
+// RaceOfUnitID returns the owner race of the unit given by its ID.
+// Returns nil if owner is unknown.
+// Currently only building units are recognized.
+func RaceOfUnitID(ID uint16) *repcore.Race {
+	if r := unitIDRace[ID]; r != nil {
+		return r
+	}
+	return nil
+}
