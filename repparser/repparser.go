@@ -344,6 +344,13 @@ func parseHeader(data []byte, r *rep.Replay, cfg Config) error {
 		h.OrigPlayers[0].Team = 1
 		h.OrigPlayers[1].Team = 2
 	}
+	// Also if game type is FFA, teams are also set to 0.
+	// Assign teams incrementing from 1.
+	if h.Type == repcore.GameTypeFFA {
+		for i, p := range h.OrigPlayers {
+			p.Team = byte(i + 1)
+		}
+	}
 
 	// Fill Players in team order:
 	h.Players = make([]*rep.Player, len(h.OrigPlayers))
