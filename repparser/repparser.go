@@ -335,16 +335,16 @@ func parseHeader(data []byte, r *rep.Replay, cfg Config) error {
 		}
 	}
 
-	// If game type is melee or OneOnOne, teams are set to 0.
-	// Heuristic improvements: If 2 players only, change teams to 1 and 2,
+	// If game type is melee or OneOnOne, all players' teams may be set to 0 or 1.
+	// Heuristic improvements: If 2 players only and their teams are the same, change teams to 1 and 2,
 	// and so matchup will be e.g. ZvT instead of ZT,
 	// and winner detection can also work (because teams will be different).
 	if (h.Type == repcore.GameTypeMelee || h.Type == repcore.GameType1v1) && len(h.OrigPlayers) == 2 &&
-		h.OrigPlayers[0].Team == 0 && h.OrigPlayers[1].Team == 0 {
+		h.OrigPlayers[0].Team == h.OrigPlayers[1].Team {
 		h.OrigPlayers[0].Team = 1
 		h.OrigPlayers[1].Team = 2
 	}
-	// Also if game type is FFA, teams are also set to 0.
+	// Also if game type is FFA, teams are set to 0.
 	// Assign teams incrementing from 1.
 	if h.Type == repcore.GameTypeFFA {
 		for i, p := range h.OrigPlayers {
