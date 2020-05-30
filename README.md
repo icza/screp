@@ -50,4 +50,4 @@ This will clone this repo if you don't have it yet, or update it if you already 
 
 ## Example projects using this
 
-- https://github.com/icza/repmastered
+- [repmastered.app](https://repmastered.app)
