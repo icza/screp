@@ -694,10 +694,10 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 			height := sr.getUint16()
 			if width <= 256 && height <= 256 {
 				if width > r.Header.MapWidth {
-					r.Header.MapWidth = sr.getUint16()
+					r.Header.MapWidth = width
 				}
 				if height > r.Header.MapHeight {
-					r.Header.MapHeight = sr.getUint16()
+					r.Header.MapHeight = height
 				}
 			}
 		case "MTXM": // Tile sub-section
