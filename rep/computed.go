@@ -42,6 +42,12 @@ type PlayerDesc struct {
 	// APM is the APM (Actions Per Minute) of the player.
 	APM int32
 
+	// EffectiveCmdCount is the number of effective commands of the player.
+	EffectiveCmdCount uint32
+
+	// EAPM is the EAPM (Effective Actions Per Minute) of the player.
+	EAPM int32
+
 	// StartLocation of the player
 	StartLocation *repcore.Point
 

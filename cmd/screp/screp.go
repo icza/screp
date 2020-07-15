@@ -13,12 +13,13 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/icza/screp/rep"
 	"github.com/icza/screp/repparser"
 )
 
 const (
 	appName    = "screp"
-	appVersion = "v1.2.1"
+	appVersion = "v1.3"
 	appAuthor  = "Andras Belicza"
 	appHome    = "https://github.com/icza/screp"
 )
@@ -108,6 +109,7 @@ func main() {
 func printVersion() {
 	fmt.Println(appName, "version:", appVersion)
 	fmt.Println("Parser version:", repparser.Version)
+	fmt.Println("EAPM algorithm version:", rep.EAPMVersion)
 	fmt.Println("Platform:", runtime.GOOS, runtime.GOARCH)
 	fmt.Println("Built with:", runtime.Version())
 	fmt.Println("Author:", appAuthor)

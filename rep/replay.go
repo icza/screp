@@ -31,9 +31,11 @@ func (r *Replay) Compute() {
 		return
 	}
 
+	numPlayers := len(r.Header.Players)
+
 	c := &Computed{
-		PlayerDescs:    make([]*PlayerDesc, len(r.Header.Players)),
-		PIDPlayerDescs: make(map[byte]*PlayerDesc, len(r.Header.Players)),
+		PlayerDescs:    make([]*PlayerDesc, numPlayers),
+		PIDPlayerDescs: make(map[byte]*PlayerDesc, numPlayers),
 	}
 
 	for i, p := range r.Header.Players {
@@ -51,12 +53,33 @@ func (r *Replay) Compute() {
 	}
 
 	if r.Commands != nil {
+		// We need to gather player's commands separately for EAPM calculation.
+		// We could use a map, mapping from pid to player's commands, but then when building it,
+		// we would have to always reassign the slice. Instead we use a pointer to a wrapper struct:
+		type pidCmdsWrapper struct {
+			cmds []repcmd.Cmd
+		}
+		pidCmdsWrappers := make(map[byte]*pidCmdsWrapper, len(r.Header.Players))
+		for _, p := range r.Header.Players {
+			pidCmdsWrappers[p.ID] = &pidCmdsWrapper{
+				cmds: make([]repcmd.Cmd, 0, len(r.Commands.Cmds)/numPlayers), // Estimate even cmd distribution for fewer reallocations
+			}
+		}
+
 		cmds := r.Commands.Cmds
 		for _, cmd := range cmds {
 			// Observers' commands (e.g. chat) have PlayerID starting with 128 (2nd obs 129 etc.)
 			// We don't have PlayerDescs for them, so must check:
 			if pd := c.PIDPlayerDescs[cmd.BaseCmd().PlayerID]; pd != nil {
-				c.PIDPlayerDescs[cmd.BaseCmd().PlayerID].CmdCount++
+				pid := cmd.BaseCmd().PlayerID
+				pd := c.PIDPlayerDescs[pid]
+				pd.CmdCount++
+
+				pidCmdsWrapper := pidCmdsWrappers[pid]
+				pidCmdsWrapper.cmds = append(pidCmdsWrapper.cmds, cmd)
+				if IsCmdEffective(pidCmdsWrapper.cmds, len(pidCmdsWrapper.cmds)-1) {
+					pd.EffectiveCmdCount++
+				}
 			}
 			switch x := cmd.(type) {
 			case *repcmd.LeaveGameCmd:
@@ -152,13 +175,14 @@ func (r *Replay) Compute() {
 			}
 		}
 
-		// Calculate APMs:
+		// Calculate APMs and EAPMs:
 		for _, pd := range c.PlayerDescs {
 			if pd.LastCmdFrame == 0 {
 				continue
 			}
 			mins := pd.LastCmdFrame.Duration().Minutes()
 			pd.APM = int32(float64(pd.CmdCount)/mins + 0.5)
+			pd.EAPM = int32(float64(pd.EffectiveCmdCount)/mins + 0.5)
 		}
 	}
 
