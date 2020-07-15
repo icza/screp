@@ -218,9 +218,57 @@ func OrderByID(ID byte) *Order {
 
 // Order IDs
 const (
-	OrderIDUnload           = 0x6f
-	OrderIDMoveUnload       = 0x70
-	OrderIDNukeLaunch       = 0x7d
-	OrderIDCastRecall       = 0x89
-	OrderIDCastScannerSweep = 0x8b
+	OrderIDStop                = 0x01
+	OrderIDMove                = 0x06
+	OrderIDReaverStop          = 0x07
+	OrderIDAttack1             = 0x08
+	OrderIDAttack2             = 0x09
+	OrderIDAttackUnit          = 0x0a
+	OrderIDAttackFixedRange    = 0x0b
+	OrderIDAttackTile          = 0x0c
+	OrderIDAttackMove          = 0x0e
+	OrderIDRallyPointUnit      = 0x27
+	OrderIDRallyPointTile      = 0x28
+	OrderIDCarrierStop         = 0x34
+	OrderIDCarrierAttack       = 0x35
+	OrderIDCarrierHoldPosition = 0x39
+	OrderIDReaverHoldPosition  = 0x3e
+	OrderIDReaverAttack        = 0x3b
+	OrderIDHoldPosition        = 0x6b
+	OrderIDQueenHoldPosition   = 0x6c
+	OrderIDUnload              = 0x6f
+	OrderIDMoveUnload          = 0x70
+	OrderIDNukeLaunch          = 0x7d
+	OrderIDCastRecall          = 0x89
+	OrderIDCastScannerSweep    = 0x8b
+	OrderIDMedicHoldPosition   = 0xb2
 )
+
+// IsOrderIDKindStop tells if the given order ID is one of the stop orders.
+func IsOrderIDKindStop(orderID byte) bool {
+	switch orderID {
+	case OrderIDStop, OrderIDReaverStop, OrderIDCarrierStop:
+		return true
+	}
+	return false
+}
+
+// IsOrderIDKindHold tells if the given order ID is one of the hold orders.
+func IsOrderIDKindHold(orderID byte) bool {
+	switch orderID {
+	case OrderIDHoldPosition, OrderIDCarrierHoldPosition, OrderIDReaverHoldPosition,
+		OrderIDQueenHoldPosition, OrderIDMedicHoldPosition:
+		return true
+	}
+	return false
+}
+
+// IsOrderIDKindAttack tells if the given order ID is one of the attack orders.
+func IsOrderIDKindAttack(orderID byte) bool {
+	switch orderID {
+	case OrderIDAttack1, OrderIDAttack2, OrderIDAttackUnit, OrderIDAttackFixedRange,
+		OrderIDAttackMove, OrderIDCarrierAttack, OrderIDReaverAttack:
+		return true
+	}
+	return false
+}

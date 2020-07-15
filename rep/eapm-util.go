@@ -2,11 +2,13 @@
 
 package rep
 
-import "github.com/icza/screp/rep/repcmd"
+import (
+	"github.com/icza/screp/rep/repcmd"
+)
 
 const (
 	// EAPMVersion is a Semver2 compatible version of the EAPM algorithm.
-	EAPMVersion = "v1.0.1"
+	EAPMVersion = "v1.0.2"
 )
 
 // IsCmdEffective tells if a command is considered effective so it can be included in EAPM calculation.
@@ -30,20 +32,46 @@ func IsCmdEffective(cmds []repcmd.Cmd, i int) bool {
 		}
 	}
 
-	frame := cmd.BaseCmd().Frame
-
 	prevCmd := cmds[i-1] // i > 0
 	prevTid := prevCmd.BaseCmd().Type.ID
-	prevFrame := prevCmd.BaseCmd().Frame
+
+	deltaFrame := cmd.BaseCmd().Frame - prevCmd.BaseCmd().Frame
 
 	// Too fast cancel
-	if frame-prevFrame <= 20 {
+	if deltaFrame <= 20 {
 		switch {
 		case tid == repcmd.TypeIDTrain && prevTid == repcmd.TypeIDCancelTrain:
 			return false
 		case (tid == repcmd.TypeIDUnitMorph || tid == repcmd.TypeIDBuildingMorph) && prevTid == repcmd.TypeIDCancelMorph:
 			return false
 		case tid == repcmd.TypeIDUpgrade && prevTid == repcmd.TypeIDCancelUpgrade:
+			return false
+		}
+	}
+
+	// Too fast repetition of commands in a short time
+	// (regardless of its destination, if destination is different/far, then the first one was useless)
+	check := false
+	switch tid {
+	case repcmd.TypeIDStop, repcmd.TypeIDHoldPosition:
+		check = true
+	case repcmd.TypeIDTargetedOrder, repcmd.TypeIDTargetedOrder121:
+		oid := cmd.(*repcmd.TargetedOrderCmd).Order.ID
+		if repcmd.IsOrderIDKindStop(oid) || repcmd.IsOrderIDKindAttack(oid) || repcmd.IsOrderIDKindHold(oid) {
+			check = true
+		} else {
+			switch oid {
+			case repcmd.OrderIDMove, repcmd.OrderIDRallyPointUnit, repcmd.OrderIDRallyPointTile:
+				check = true
+			}
+		}
+	case repcmd.TypeIDHotkey:
+		if cmd.(*repcmd.HotkeyCmd).HotkeyType.ID == repcmd.HotkeyTypeIDAdd {
+			check = true
+		}
+	}
+	if check {
+		if deltaFrame <= 10 {
 			return false
 		}
 	}
