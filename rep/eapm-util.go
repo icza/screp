@@ -41,13 +41,13 @@ func IsCmdEffective(cmds []repcmd.Cmd, i int) bool {
 	// Too fast cancel
 	if deltaFrame <= 20 {
 		switch {
-		case (tid == repcmd.TypeIDTrain || tid == repcmd.TypeIDTrainFighter) && prevTid == repcmd.TypeIDCancelTrain:
+		case (prevTid == repcmd.TypeIDTrain || prevTid == repcmd.TypeIDTrainFighter) && tid == repcmd.TypeIDCancelTrain:
 			return false
-		case (tid == repcmd.TypeIDUnitMorph || tid == repcmd.TypeIDBuildingMorph) && prevTid == repcmd.TypeIDCancelMorph:
+		case (prevTid == repcmd.TypeIDUnitMorph || prevTid == repcmd.TypeIDBuildingMorph) && tid == repcmd.TypeIDCancelMorph:
 			return false
-		case tid == repcmd.TypeIDUpgrade && prevTid == repcmd.TypeIDCancelUpgrade:
+		case prevTid == repcmd.TypeIDUpgrade && tid == repcmd.TypeIDCancelUpgrade:
 			return false
-		case tid == repcmd.TypeIDTech && prevTid == repcmd.TypeIDCancelTech:
+		case prevTid == repcmd.TypeIDTech && tid == repcmd.TypeIDCancelTech:
 			return false
 		}
 	}
@@ -121,7 +121,7 @@ func IsCmdEffective(cmds []repcmd.Cmd, i int) bool {
 		}
 	}
 
-	return true // If we got this far: it's effective
+	return true // If we got this far, classify it as effective
 }
 
 // countSameCmds counts how many times the given command is repeated on the same selected units
