@@ -167,13 +167,3 @@ func isSelectionChanger(cmd repcmd.Cmd) bool {
 	}
 	return false
 }
-
-// isCancel tells if the given command type ID is one of the cancels.
-func isCancel(tid byte) bool {
-	switch tid {
-	case repcmd.TypeIDCancelAddon, repcmd.TypeIDCancelBuild, repcmd.TypeIDCancelMorph, repcmd.TypeIDCancelNuke,
-		repcmd.TypeIDCancelTech, repcmd.TypeIDCancelUpgrade, repcmd.TypeIDCancelTrain:
-		return true
-	}
-	return false
-}
