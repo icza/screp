@@ -21,12 +21,29 @@ func IsCmdEffective(cmds []repcmd.Cmd, i int) bool {
 	// Try to "prove" command is ineffective. If we can't, it's effective.
 
 	cmd := cmds[i]
-	baseCmd := cmd.BaseCmd()
-	tid := baseCmd.Type.ID
+	tid := cmd.BaseCmd().Type.ID
 
 	// Unit queue overflow
 	if tid == repcmd.TypeIDTrain || tid == repcmd.TypeIDTrainFighter {
 		if countSameCmds(cmds, i, cmd) >= 6 {
+			return false
+		}
+	}
+
+	frame := cmd.BaseCmd().Frame
+
+	prevCmd := cmds[i-1] // i > 0
+	prevTid := prevCmd.BaseCmd().Type.ID
+	prevFrame := prevCmd.BaseCmd().Frame
+
+	// Too fast cancel
+	if frame-prevFrame <= 20 {
+		switch {
+		case tid == repcmd.TypeIDTrain && prevTid == repcmd.TypeIDCancelTrain:
+			return false
+		case (tid == repcmd.TypeIDUnitMorph || tid == repcmd.TypeIDBuildingMorph) && prevTid == repcmd.TypeIDCancelMorph:
+			return false
+		case tid == repcmd.TypeIDUpgrade && prevTid == repcmd.TypeIDCancelUpgrade:
 			return false
 		}
 	}
