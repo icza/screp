@@ -26,7 +26,8 @@ func IsCmdEffective(cmds []repcmd.Cmd, i int) bool {
 	tid := cmd.BaseCmd().Type.ID
 
 	// Unit queue overflow
-	if tid == repcmd.TypeIDTrain || tid == repcmd.TypeIDTrainFighter {
+	switch tid {
+	case repcmd.TypeIDTrain, repcmd.TypeIDTrainFighter, repcmd.TypeIDCancelTrain:
 		if countSameCmds(cmds, i, cmd) >= 6 {
 			return false
 		}
@@ -40,38 +41,73 @@ func IsCmdEffective(cmds []repcmd.Cmd, i int) bool {
 	// Too fast cancel
 	if deltaFrame <= 20 {
 		switch {
-		case tid == repcmd.TypeIDTrain && prevTid == repcmd.TypeIDCancelTrain:
+		case (tid == repcmd.TypeIDTrain || tid == repcmd.TypeIDTrainFighter) && prevTid == repcmd.TypeIDCancelTrain:
 			return false
 		case (tid == repcmd.TypeIDUnitMorph || tid == repcmd.TypeIDBuildingMorph) && prevTid == repcmd.TypeIDCancelMorph:
 			return false
 		case tid == repcmd.TypeIDUpgrade && prevTid == repcmd.TypeIDCancelUpgrade:
 			return false
+		case tid == repcmd.TypeIDTech && prevTid == repcmd.TypeIDCancelTech:
+			return false
 		}
 	}
 
-	// Too fast repetition of commands in a short time
-	// (regardless of its destination, if destination is different/far, then the first one was useless)
-	check := false
-	switch tid {
-	case repcmd.TypeIDStop, repcmd.TypeIDHoldPosition:
-		check = true
-	case repcmd.TypeIDTargetedOrder, repcmd.TypeIDTargetedOrder121:
-		oid := cmd.(*repcmd.TargetedOrderCmd).Order.ID
-		if repcmd.IsOrderIDKindStop(oid) || repcmd.IsOrderIDKindAttack(oid) || repcmd.IsOrderIDKindHold(oid) {
-			check = true
-		} else {
+	// Too fast repetition of certain commands in a short period of time
+	// (regardless of their destinations, if destinations are different/far, then the first one was useless)
+	if deltaFrame <= 10 {
+		switch tid {
+		case repcmd.TypeIDStop, repcmd.TypeIDHoldPosition:
+			return false
+		case repcmd.TypeIDTargetedOrder, repcmd.TypeIDTargetedOrder121:
+			oid := cmd.(*repcmd.TargetedOrderCmd).Order.ID
+			if repcmd.IsOrderIDKindStop(oid) || repcmd.IsOrderIDKindAttack(oid) || repcmd.IsOrderIDKindHold(oid) {
+				return false
+			}
 			switch oid {
 			case repcmd.OrderIDMove, repcmd.OrderIDRallyPointUnit, repcmd.OrderIDRallyPointTile:
-				check = true
+				return false
+			}
+		case repcmd.TypeIDHotkey:
+			if cmd.(*repcmd.HotkeyCmd).HotkeyType.ID == repcmd.HotkeyTypeIDAdd {
+				return false
 			}
 		}
-	case repcmd.TypeIDHotkey:
-		if cmd.(*repcmd.HotkeyCmd).HotkeyType.ID == repcmd.HotkeyTypeIDAdd {
-			check = true
+	}
+
+	// Too fast switch away from or reselecting the same selected unit = no use of selecting it.
+	// By too fast I mean it's not even enough to check the units' state.
+	if deltaFrame <= 8 && isSelectionChanger(cmd) && isSelectionChanger(prevCmd) {
+		// Exclude double tapping the same hotkey: it's only ineffective if tapped more than 3 times
+		// (double tapping is used to center the group)
+		doubleTap := false
+		if he, ok := cmd.(*repcmd.HotkeyCmd); ok {
+			if he2, ok2 := prevCmd.(*repcmd.HotkeyCmd); ok2 {
+				if he.Group == he2.Group {
+					doubleTap = true
+					// Is it repeated fast at least 3 times?
+					if i >= 2 {
+						prevPrevCmd := cmds[i-2]
+						if he3, ok3 := prevPrevCmd.(*repcmd.HotkeyCmd); ok3 &&
+							he3.HotkeyType.ID == repcmd.HotkeyTypeIDSelect && he3.Group == he.Group &&
+							he2.Base.Frame-he3.Base.Frame <= 8 {
+							return false // Same hotkey (select) pressed at least 3 times
+						}
+					}
+				}
+			}
+		}
+		if !doubleTap {
+			return false
 		}
 	}
-	if check {
-		if deltaFrame <= 10 {
+
+	// Repetition of certain commands without time restriction
+	switch tid {
+	case repcmd.TypeIDUnitMorph, repcmd.TypeIDBuildingMorph, repcmd.TypeIDUpgrade, repcmd.TypeIDBuild,
+		repcmd.TypeIDMergeArchon, repcmd.TypeIDMergeDarkArchon, repcmd.TypeIDLiftOff,
+		repcmd.TypeIDCancelAddon, repcmd.TypeIDCancelBuild, repcmd.TypeIDCancelMorph, repcmd.TypeIDCancelNuke,
+		repcmd.TypeIDCancelTech, repcmd.TypeIDCancelUpgrade:
+		if tid == prevTid {
 			return false
 		}
 	}
@@ -121,6 +157,16 @@ func isSelectionChanger(cmd repcmd.Cmd) bool {
 		if cmd.(*repcmd.HotkeyCmd).HotkeyType.ID == repcmd.HotkeyTypeIDSelect {
 			return true
 		}
+	}
+	return false
+}
+
+// isCancel tells if the given command type ID is one of the cancels.
+func isCancel(tid byte) bool {
+	switch tid {
+	case repcmd.TypeIDCancelAddon, repcmd.TypeIDCancelBuild, repcmd.TypeIDCancelMorph, repcmd.TypeIDCancelNuke,
+		repcmd.TypeIDCancelTech, repcmd.TypeIDCancelUpgrade, repcmd.TypeIDCancelTrain:
+		return true
 	}
 	return false
 }
