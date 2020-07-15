@@ -67,10 +67,6 @@ func IsCmdEffective(cmds []repcmd.Cmd, i int) bool {
 			case repcmd.OrderIDMove, repcmd.OrderIDRallyPointUnit, repcmd.OrderIDRallyPointTile:
 				return false
 			}
-		case repcmd.TypeIDHotkey:
-			if cmd.(*repcmd.HotkeyCmd).HotkeyType.ID == repcmd.HotkeyTypeIDAdd {
-				return false
-			}
 		}
 	}
 
