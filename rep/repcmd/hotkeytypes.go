@@ -19,6 +19,13 @@ var HotkeyTypes = []*HotkeyType{
 	{e("Add"), 0x02},
 }
 
+// HotkeyType IDs
+const (
+	HotkeyTypeIDAssign = 0x00
+	HotkeyTypeIDSelect = 0x01
+	HotkeyTypeIDAdd    = 0x02
+)
+
 // HotkeyTypeByID returns the HotkeyType for a given ID.
 // A new HotkeyType with Unknown name is returned if one is not found
 // for the given ID (preserving the unknown ID).

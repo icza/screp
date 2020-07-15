@@ -18,9 +18,64 @@ func IsCmdEffective(cmds []repcmd.Cmd, i int) bool {
 		return true // First command is effective whatever it is
 	}
 
-	cmd := cmds[i]
+	// Try to "prove" command is ineffective. If we can't, it's effective.
 
-	_ = cmd
+	cmd := cmds[i]
+	baseCmd := cmd.BaseCmd()
+	tid := baseCmd.Type.ID
+
+	// Unit queue overflow
+	if tid == repcmd.TypeIDTrain || tid == repcmd.TypeIDTrainFighter {
+		if countSameCmds(cmds, i, cmd) >= 6 {
+			return false
+		}
+	}
+
 	// TODO
+
+	return true // If we got this far: it's effective
+}
+
+// countSameCmds counts how many times the given command is repeated on the same selected units
+// without about 1 second.
+//
+// Counting is capped at 6: even if the command is repeated more times, 6 is returned.
+//
+// cmd must be cmds[i].
+func countSameCmds(cmds []repcmd.Cmd, i int, cmd repcmd.Cmd) (count int) {
+	baseCmd := cmd.BaseCmd()
+	frameLimit := baseCmd.Frame - 25 // About 1 second
+
+	for ; i >= 0; i-- {
+		cmd2 := cmds[i]
+		baseCmd2 := cmd2.BaseCmd()
+		if baseCmd2.Frame < frameLimit {
+			break
+		}
+
+		if baseCmd2.Type == baseCmd.Type {
+			count++
+			if count == 6 {
+				break
+			}
+		} else if isSelectionChanger(cmd2) {
+			break
+		}
+	}
+
+	return
+}
+
+// isSelectionChanger tells if the given command (may) change the current selection.
+func isSelectionChanger(cmd repcmd.Cmd) bool {
+	switch cmd.BaseCmd().Type.ID {
+	case repcmd.TypeIDSelect, repcmd.TypeIDSelectAdd, repcmd.TypeIDSelectRemove,
+		repcmd.TypeIDSelect121, repcmd.TypeIDSelectAdd121, repcmd.TypeIDSelectRemove121:
+		return true
+	case repcmd.TypeIDHotkey:
+		if cmd.(*repcmd.HotkeyCmd).HotkeyType.ID == repcmd.HotkeyTypeIDSelect {
+			return true
+		}
+	}
 	return false
 }
