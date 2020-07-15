@@ -112,7 +112,14 @@ func IsCmdEffective(cmds []repcmd.Cmd, i int) bool {
 		}
 	}
 
-	// TODO
+	// Repetition of the same hotkey assign or add
+	if he, ok := cmd.(*repcmd.HotkeyCmd); ok && he.HotkeyType.ID != repcmd.HotkeyTypeIDSelect {
+		if he2, ok2 := prevCmd.(*repcmd.HotkeyCmd); ok2 && he2.HotkeyType.ID == he.HotkeyType.ID {
+			if he.Group == he2.Group {
+				return false
+			}
+		}
+	}
 
 	return true // If we got this far: it's effective
 }
