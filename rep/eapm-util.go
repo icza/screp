@@ -4,6 +4,7 @@ package rep
 
 import (
 	"github.com/icza/screp/rep/repcmd"
+	"github.com/icza/screp/rep/repcore"
 )
 
 const (
@@ -16,63 +17,16 @@ const (
 // cmds must contain commands of the cmd's player only. It may be a partially filled slice, but must contain
 // the player's all commands up to the command in question: len(cmds) > i must hold.
 func IsCmdEffective(cmds []repcmd.Cmd, i int) bool {
-	return CmdIneffKind(cmds, i) == IneffKindEffective
-}
-
-// IneffKind classifies commands if and why they are ineffective.
-type IneffKind byte
-
-const (
-	// IneffKindUnknown means IneffKind is not yet determined / unknown.
-	IneffKindUnknown IneffKind = iota
-
-	// IneffKindEffective means the command is considered effective.
-	IneffKindEffective
-
-	// IneffKindUnitQueueOverflow means the command is ineffective due to unit queue overflow
-	IneffKindUnitQueueOverflow
-
-	// IneffKindFastCancel means the command is ineffective due to too fast cancel
-	IneffKindFastCancel
-
-	// IneffKindFastRepetition means the command is ineffective due to too fast repetition
-	IneffKindFastRepetition
-
-	// IneffKindFastReselection means the command is ineffective due to too fast selection change
-	// or reselection
-	IneffKindFastReselection
-
-	// IneffKindRepetition means the command is ineffective due to repetition
-	IneffKindRepetition
-
-	// IneffKindRepetitionHotkeyAddAssign means the command is ineffective due to
-	// repeating the same hotkey add or assign
-	IneffKindRepetitionHotkeyAddAssign
-)
-
-var effectiveKindStrings = []string{
-	IneffKindUnknown:                   "unknown",
-	IneffKindEffective:                 "effective",
-	IneffKindUnitQueueOverflow:         "unit queue overflow",
-	IneffKindFastCancel:                "too fast cancel",
-	IneffKindFastRepetition:            "too fast repetition",
-	IneffKindFastReselection:           "too fast selection change or reselection",
-	IneffKindRepetition:                "repetition",
-	IneffKindRepetitionHotkeyAddAssign: "repeptition of the same hotkey add or assign",
-}
-
-// String returns a short string description.
-func (k IneffKind) String() string {
-	return effectiveKindStrings[k]
+	return CmdIneffKind(cmds, i) == repcore.IneffKindEffective
 }
 
 // CmdIneffKind returns the IneffKind classification of the given command.
 //
 // cmds must contain commands of the cmd's player only. It may be a partially filled slice, but must contain
 // the player's all commands up to the command in question: len(cmds) > i must hold.
-func CmdIneffKind(cmds []repcmd.Cmd, i int) IneffKind {
+func CmdIneffKind(cmds []repcmd.Cmd, i int) repcore.IneffKind {
 	if i == 0 {
-		return IneffKindEffective // First command is effective whatever it is
+		return repcore.IneffKindEffective // First command is effective whatever it is
 	}
 
 	// Try to "prove" command is ineffective. If we can't, it's effective.
@@ -84,7 +38,7 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) IneffKind {
 	switch tid {
 	case repcmd.TypeIDTrain, repcmd.TypeIDTrainFighter, repcmd.TypeIDCancelTrain:
 		if countSameCmds(cmds, i, cmd) >= 6 {
-			return IneffKindUnitQueueOverflow
+			return repcore.IneffKindUnitQueueOverflow
 		}
 	}
 
@@ -97,13 +51,13 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) IneffKind {
 	if deltaFrame <= 20 {
 		switch {
 		case (prevTid == repcmd.TypeIDTrain || prevTid == repcmd.TypeIDTrainFighter) && tid == repcmd.TypeIDCancelTrain:
-			return IneffKindFastCancel
+			return repcore.IneffKindFastCancel
 		case (prevTid == repcmd.TypeIDUnitMorph || prevTid == repcmd.TypeIDBuildingMorph) && tid == repcmd.TypeIDCancelMorph:
-			return IneffKindFastCancel
+			return repcore.IneffKindFastCancel
 		case prevTid == repcmd.TypeIDUpgrade && tid == repcmd.TypeIDCancelUpgrade:
-			return IneffKindFastCancel
+			return repcore.IneffKindFastCancel
 		case prevTid == repcmd.TypeIDTech && tid == repcmd.TypeIDCancelTech:
-			return IneffKindFastCancel
+			return repcore.IneffKindFastCancel
 		}
 	}
 
@@ -112,15 +66,15 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) IneffKind {
 	if deltaFrame <= 10 {
 		switch tid {
 		case repcmd.TypeIDStop, repcmd.TypeIDHoldPosition:
-			return IneffKindFastRepetition
+			return repcore.IneffKindFastRepetition
 		case repcmd.TypeIDTargetedOrder, repcmd.TypeIDTargetedOrder121:
 			oid := cmd.(*repcmd.TargetedOrderCmd).Order.ID
 			if repcmd.IsOrderIDKindStop(oid) || repcmd.IsOrderIDKindAttack(oid) || repcmd.IsOrderIDKindHold(oid) {
-				return IneffKindFastRepetition
+				return repcore.IneffKindFastRepetition
 			}
 			switch oid {
 			case repcmd.OrderIDMove, repcmd.OrderIDRallyPointUnit, repcmd.OrderIDRallyPointTile:
-				return IneffKindFastRepetition
+				return repcore.IneffKindFastRepetition
 			}
 		}
 	}
@@ -141,14 +95,14 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) IneffKind {
 						if he3, ok3 := prevPrevCmd.(*repcmd.HotkeyCmd); ok3 &&
 							he3.HotkeyType.ID == repcmd.HotkeyTypeIDSelect && he3.Group == he.Group &&
 							he2.Base.Frame-he3.Base.Frame <= 8 {
-							return IneffKindFastReselection // Same hotkey (select) pressed at least 3 times
+							return repcore.IneffKindFastReselection // Same hotkey (select) pressed at least 3 times
 						}
 					}
 				}
 			}
 		}
 		if !doubleTap {
-			return IneffKindFastReselection
+			return repcore.IneffKindFastReselection
 		}
 	}
 
@@ -159,7 +113,7 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) IneffKind {
 		repcmd.TypeIDCancelAddon, repcmd.TypeIDCancelBuild, repcmd.TypeIDCancelMorph, repcmd.TypeIDCancelNuke,
 		repcmd.TypeIDCancelTech, repcmd.TypeIDCancelUpgrade:
 		if tid == prevTid {
-			return IneffKindRepetition
+			return repcore.IneffKindRepetition
 		}
 	}
 
@@ -167,12 +121,12 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) IneffKind {
 	if he, ok := cmd.(*repcmd.HotkeyCmd); ok && he.HotkeyType.ID != repcmd.HotkeyTypeIDSelect {
 		if he2, ok2 := prevCmd.(*repcmd.HotkeyCmd); ok2 && he2.HotkeyType.ID == he.HotkeyType.ID {
 			if he.Group == he2.Group {
-				return IneffKindRepetitionHotkeyAddAssign
+				return repcore.IneffKindRepetitionHotkeyAddAssign
 			}
 		}
 	}
 
-	return IneffKindEffective // If we got this far, classify it as effective
+	return repcore.IneffKindEffective // If we got this far, classify it as effective
 }
 
 // countSameCmds counts how many times the given command is repeated on the same selected units
