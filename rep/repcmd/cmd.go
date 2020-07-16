@@ -33,6 +33,9 @@ type Base struct {
 
 	// Type of the command
 	Type *Type
+
+	// IneffKind classification of the command
+	IneffKind repcore.IneffKind `json:",omitempty"`
 }
 
 // BaseCmd implements Cmd.BaseCmd().

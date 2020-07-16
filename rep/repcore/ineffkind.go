@@ -4,11 +4,8 @@ package repcore
 type IneffKind byte
 
 const (
-	// IneffKindUnknown means IneffKind is not yet determined / unknown.
-	IneffKindUnknown IneffKind = iota
-
 	// IneffKindEffective means the command is considered effective.
-	IneffKindEffective
+	IneffKindEffective IneffKind = iota
 
 	// IneffKindUnitQueueOverflow means the command is ineffective due to unit queue overflow
 	IneffKindUnitQueueOverflow
@@ -32,7 +29,6 @@ const (
 )
 
 var effectiveKindStrings = []string{
-	IneffKindUnknown:                   "unknown",
 	IneffKindEffective:                 "effective",
 	IneffKindUnitQueueOverflow:         "unit queue overflow",
 	IneffKindFastCancel:                "too fast cancel",

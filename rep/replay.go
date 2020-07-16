@@ -7,6 +7,7 @@ import (
 	"math"
 
 	"github.com/icza/screp/rep/repcmd"
+	"github.com/icza/screp/rep/repcore"
 )
 
 // Replay models an SC:BW replay.
@@ -70,14 +71,16 @@ func (r *Replay) Compute() {
 		for _, cmd := range cmds {
 			// Observers' commands (e.g. chat) have PlayerID starting with 128 (2nd obs 129 etc.)
 			// We don't have PlayerDescs for them, so must check:
-			if pd := c.PIDPlayerDescs[cmd.BaseCmd().PlayerID]; pd != nil {
-				pid := cmd.BaseCmd().PlayerID
+			baseCmd := cmd.BaseCmd()
+			if pd := c.PIDPlayerDescs[baseCmd.PlayerID]; pd != nil {
+				pid := baseCmd.PlayerID
 				pd := c.PIDPlayerDescs[pid]
 				pd.CmdCount++
 
 				pidCmdsWrapper := pidCmdsWrappers[pid]
 				pidCmdsWrapper.cmds = append(pidCmdsWrapper.cmds, cmd)
-				if IsCmdEffective(pidCmdsWrapper.cmds, len(pidCmdsWrapper.cmds)-1) {
+				baseCmd.IneffKind = CmdIneffKind(pidCmdsWrapper.cmds, len(pidCmdsWrapper.cmds)-1)
+				if baseCmd.IneffKind == repcore.IneffKindEffective {
 					pd.EffectiveCmdCount++
 				}
 			}
