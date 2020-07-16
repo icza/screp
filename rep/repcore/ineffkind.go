@@ -28,7 +28,7 @@ const (
 	IneffKindRepetitionHotkeyAddAssign
 )
 
-var effectiveKindStrings = []string{
+var ineffKindStrings = []string{
 	IneffKindEffective:                 "effective",
 	IneffKindUnitQueueOverflow:         "unit queue overflow",
 	IneffKindFastCancel:                "too fast cancel",
@@ -40,5 +40,5 @@ var effectiveKindStrings = []string{
 
 // String returns a short string description.
 func (k IneffKind) String() string {
-	return effectiveKindStrings[k]
+	return ineffKindStrings[k]
 }
