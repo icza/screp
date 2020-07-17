@@ -9,7 +9,7 @@ import (
 
 const (
 	// EAPMVersion is a Semver2 compatible version of the EAPM algorithm.
-	EAPMVersion = "v1.0.2"
+	EAPMVersion = "v1.0.3"
 )
 
 // IsCmdEffective tells if a command is considered effective so it can be included in EAPM calculation.
@@ -63,18 +63,20 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) repcore.IneffKind {
 
 	// Too fast repetition of certain commands in a short period of time
 	// (regardless of their destinations, if destinations are different/far, then the first one was useless)
-	if deltaFrame <= 10 {
+	if deltaFrame <= 10 && tid == prevTid {
 		switch tid {
 		case repcmd.TypeIDStop, repcmd.TypeIDHoldPosition:
 			return repcore.IneffKindFastRepetition
 		case repcmd.TypeIDTargetedOrder, repcmd.TypeIDTargetedOrder121:
-			oid := cmd.(*repcmd.TargetedOrderCmd).Order.ID
-			if repcmd.IsOrderIDKindStop(oid) || repcmd.IsOrderIDKindAttack(oid) || repcmd.IsOrderIDKindHold(oid) {
-				return repcore.IneffKindFastRepetition
-			}
-			switch oid {
-			case repcmd.OrderIDMove, repcmd.OrderIDRallyPointUnit, repcmd.OrderIDRallyPointTile:
-				return repcore.IneffKindFastRepetition
+			oid, prevOid := cmd.(*repcmd.TargetedOrderCmd).Order.ID, prevCmd.(*repcmd.TargetedOrderCmd).Order.ID
+			if oid == prevOid {
+				if repcmd.IsOrderIDKindStop(oid) || repcmd.IsOrderIDKindAttack(oid) || repcmd.IsOrderIDKindHold(oid) {
+					return repcore.IneffKindFastRepetition
+				}
+				switch oid {
+				case repcmd.OrderIDMove, repcmd.OrderIDRallyPointUnit, repcmd.OrderIDRallyPointTile:
+					return repcore.IneffKindFastRepetition
+				}
 			}
 		}
 	}
@@ -107,12 +109,12 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) repcore.IneffKind {
 	}
 
 	// Repetition of certain commands without time restriction
-	switch tid {
-	case repcmd.TypeIDUnitMorph, repcmd.TypeIDBuildingMorph, repcmd.TypeIDUpgrade, repcmd.TypeIDBuild,
-		repcmd.TypeIDMergeArchon, repcmd.TypeIDMergeDarkArchon, repcmd.TypeIDLiftOff,
-		repcmd.TypeIDCancelAddon, repcmd.TypeIDCancelBuild, repcmd.TypeIDCancelMorph, repcmd.TypeIDCancelNuke,
-		repcmd.TypeIDCancelTech, repcmd.TypeIDCancelUpgrade:
-		if tid == prevTid {
+	if tid == prevTid {
+		switch tid {
+		case repcmd.TypeIDUnitMorph, repcmd.TypeIDBuildingMorph, repcmd.TypeIDUpgrade, repcmd.TypeIDBuild,
+			repcmd.TypeIDMergeArchon, repcmd.TypeIDMergeDarkArchon, repcmd.TypeIDLiftOff,
+			repcmd.TypeIDCancelAddon, repcmd.TypeIDCancelBuild, repcmd.TypeIDCancelMorph, repcmd.TypeIDCancelNuke,
+			repcmd.TypeIDCancelTech, repcmd.TypeIDCancelUpgrade:
 			return repcore.IneffKindRepetition
 		}
 	}
