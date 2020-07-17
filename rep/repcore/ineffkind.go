@@ -38,6 +38,12 @@ var ineffKindStrings = []string{
 	IneffKindRepetitionHotkeyAddAssign: "repeptition of the same hotkey add or assign",
 }
 
+// Effective tells if the IneffKind represents Effective, that is,
+// it's equal to IneffKindEffective.
+func (k IneffKind) Effective() bool {
+	return k == IneffKindEffective
+}
+
 // String returns a short string description.
 func (k IneffKind) String() string {
 	return ineffKindStrings[k]

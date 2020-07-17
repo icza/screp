@@ -7,7 +7,6 @@ import (
 	"math"
 
 	"github.com/icza/screp/rep/repcmd"
-	"github.com/icza/screp/rep/repcore"
 )
 
 // Replay models an SC:BW replay.
@@ -80,7 +79,7 @@ func (r *Replay) Compute() {
 				pidCmdsWrapper := pidCmdsWrappers[pid]
 				pidCmdsWrapper.cmds = append(pidCmdsWrapper.cmds, cmd)
 				baseCmd.IneffKind = CmdIneffKind(pidCmdsWrapper.cmds, len(pidCmdsWrapper.cmds)-1)
-				if baseCmd.IneffKind == repcore.IneffKindEffective {
+				if baseCmd.IneffKind.Effective() {
 					pd.EffectiveCmdCount++
 				}
 			}
