@@ -9,7 +9,7 @@ import (
 
 const (
 	// EAPMVersion is a Semver2 compatible version of the EAPM algorithm.
-	EAPMVersion = "v1.0.3"
+	EAPMVersion = "v1.0.4"
 )
 
 // IsCmdEffective tells if a command is considered effective so it can be included in EAPM calculation.
@@ -111,11 +111,17 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) repcore.IneffKind {
 	// Repetition of certain commands without time restriction
 	if tid == prevTid {
 		switch tid {
-		case repcmd.TypeIDUnitMorph, repcmd.TypeIDBuildingMorph, repcmd.TypeIDUpgrade, repcmd.TypeIDBuild,
+		case repcmd.TypeIDUnitMorph, repcmd.TypeIDBuildingMorph, repcmd.TypeIDUpgrade,
 			repcmd.TypeIDMergeArchon, repcmd.TypeIDMergeDarkArchon, repcmd.TypeIDLiftOff,
 			repcmd.TypeIDCancelAddon, repcmd.TypeIDCancelBuild, repcmd.TypeIDCancelMorph, repcmd.TypeIDCancelNuke,
 			repcmd.TypeIDCancelTech, repcmd.TypeIDCancelUpgrade:
 			return repcore.IneffKindRepetition
+		case repcmd.TypeIDBuild:
+			// Only consider this ineffective if race is not Protoss:
+			bc := cmd.(*repcmd.BuildCmd)
+			if bc.Order != nil && bc.Order.ID != repcmd.OrderIDPlaceProtossBuilding {
+				return repcore.IneffKindRepetition
+			}
 		}
 	}
 

@@ -218,30 +218,31 @@ func OrderByID(ID byte) *Order {
 
 // Order IDs
 const (
-	OrderIDStop                = 0x01
-	OrderIDMove                = 0x06
-	OrderIDReaverStop          = 0x07
-	OrderIDAttack1             = 0x08
-	OrderIDAttack2             = 0x09
-	OrderIDAttackUnit          = 0x0a
-	OrderIDAttackFixedRange    = 0x0b
-	OrderIDAttackTile          = 0x0c
-	OrderIDAttackMove          = 0x0e
-	OrderIDRallyPointUnit      = 0x27
-	OrderIDRallyPointTile      = 0x28
-	OrderIDCarrierStop         = 0x34
-	OrderIDCarrierAttack       = 0x35
-	OrderIDCarrierHoldPosition = 0x39
-	OrderIDReaverHoldPosition  = 0x3e
-	OrderIDReaverAttack        = 0x3b
-	OrderIDHoldPosition        = 0x6b
-	OrderIDQueenHoldPosition   = 0x6c
-	OrderIDUnload              = 0x6f
-	OrderIDMoveUnload          = 0x70
-	OrderIDNukeLaunch          = 0x7d
-	OrderIDCastRecall          = 0x89
-	OrderIDCastScannerSweep    = 0x8b
-	OrderIDMedicHoldPosition   = 0xb2
+	OrderIDStop                 = 0x01
+	OrderIDMove                 = 0x06
+	OrderIDReaverStop           = 0x07
+	OrderIDAttack1              = 0x08
+	OrderIDAttack2              = 0x09
+	OrderIDAttackUnit           = 0x0a
+	OrderIDAttackFixedRange     = 0x0b
+	OrderIDAttackTile           = 0x0c
+	OrderIDAttackMove           = 0x0e
+	OrderIDPlaceProtossBuilding = 0x1f
+	OrderIDRallyPointUnit       = 0x27
+	OrderIDRallyPointTile       = 0x28
+	OrderIDCarrierStop          = 0x34
+	OrderIDCarrierAttack        = 0x35
+	OrderIDCarrierHoldPosition  = 0x39
+	OrderIDReaverHoldPosition   = 0x3e
+	OrderIDReaverAttack         = 0x3b
+	OrderIDHoldPosition         = 0x6b
+	OrderIDQueenHoldPosition    = 0x6c
+	OrderIDUnload               = 0x6f
+	OrderIDMoveUnload           = 0x70
+	OrderIDNukeLaunch           = 0x7d
+	OrderIDCastRecall           = 0x89
+	OrderIDCastScannerSweep     = 0x8b
+	OrderIDMedicHoldPosition    = 0xb2
 )
 
 // IsOrderIDKindStop tells if the given order ID is one of the stop orders.
