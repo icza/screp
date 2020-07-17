@@ -57,7 +57,7 @@ type PlayerDesc struct {
 	StartDirection int32
 }
 
-// Redundancy returns the redundancy percent of commands.
+// Redundancy returns the redundancy percent of the player's commands.
 // A command is redundant if its ineffective.
 func (pd *PlayerDesc) Redundancy() int {
 	if pd.CmdCount == 0 {
