@@ -56,3 +56,12 @@ type PlayerDesc struct {
 	// e.g. 1 o'clock, 6 o'clock etc.
 	StartDirection int32
 }
+
+// Redundancy returns the redundancy percent of commands.
+// A command is redundant if its ineffective.
+func (pd *PlayerDesc) Redundancy() int {
+	if pd.CmdCount == 0 {
+		return 0
+	}
+	return int(float64(pd.CmdCount-pd.EffectiveCmdCount)*100/float64(pd.CmdCount) + 0.5)
+}
