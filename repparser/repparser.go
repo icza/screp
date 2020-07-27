@@ -56,7 +56,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.4.2"
+	Version = "v1.4.3"
 )
 
 var (
@@ -469,16 +469,35 @@ func parseCommands(data []byte, r *rep.Replay, cfg Config) error {
 				cmd = chatCmd
 
 			case repcmd.TypeIDVision:
-				cmd = &repcmd.GeneralCmd{
+				data := sr.getUint16()
+				visionCmd := &repcmd.VisionCmd{
 					Base: base,
-					Data: sr.readSlice(2),
 				}
+				// There is 1 bit for each slot, 0x01: shared vision for that slot
+				for i := byte(0); i < 12; i++ {
+					if data&0x01 != 0 {
+						visionCmd.SlotIDs = append(visionCmd.SlotIDs, i)
+					}
+					data >>= 1
+				}
+				cmd = visionCmd
 
 			case repcmd.TypeIDAlliance:
-				cmd = &repcmd.GeneralCmd{
+				data := sr.getUint32()
+				allianceCmd := &repcmd.AllianceCmd{
 					Base: base,
-					Data: sr.readSlice(4),
 				}
+				// There are 2 bits for each slot, 0x00: not allied, 0x1: allied, 0x02: allied victory
+				for i := byte(0); i < 11; i++ { // only 11 slots, 12th is always 0x01 or 0x02
+					if x := data & 0x03; x != 0 {
+						allianceCmd.SlotIDs = append(allianceCmd.SlotIDs, i)
+						if x == 2 {
+							allianceCmd.AlliedVictory = true
+						}
+					}
+					data >>= 2
+				}
+				cmd = allianceCmd
 
 			case repcmd.TypeIDGameSpeed:
 				cmd = &repcmd.GameSpeedCmd{

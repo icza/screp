@@ -399,6 +399,50 @@ func (cc *ChatCmd) Params(verbose bool) string {
 	)
 }
 
+// VisionCmd describes the share vision command. Type: TypeIDVision
+type VisionCmd struct {
+	*Base
+
+	// SlotIDs lists slot IDs the owner shared shared vision with
+	SlotIDs []byte
+}
+
+// Params implements Cmd.Params().
+func (vc *VisionCmd) Params(verbose bool) string {
+	return fmt.Sprintf(
+		c(verbose,
+			"SlotIDs: %v",
+			"%v",
+		),
+		vc.SlotIDs,
+	)
+}
+
+// AllianceCmd describes the set alliance command. Type: TypeIDAlliance
+type AllianceCmd struct {
+	*Base
+
+	// SlotIDs lists slot IDs the owner is allied to
+	SlotIDs []byte
+
+	// AlliedVictory tells if Allied Victory is set.
+	AlliedVictory bool
+}
+
+// Params implements Cmd.Params().
+func (ac *AllianceCmd) Params(verbose bool) string {
+	if verbose {
+		return fmt.Sprintf("SlotIDs: %v, AlliedVictory: %t", ac.SlotIDs, ac.AlliedVictory)
+	}
+
+	b := &strings.Builder{}
+	fmt.Fprintf(b, "%v", ac.SlotIDs)
+	if ac.AlliedVictory {
+		b.WriteString(", AlliedVictory")
+	}
+	return b.String()
+}
+
 // CancelTrainCmd describes a cancel train command. Type: TypeCancelTrain
 type CancelTrainCmd struct {
 	*Base
