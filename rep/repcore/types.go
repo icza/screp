@@ -38,6 +38,11 @@ func (f Frame) String() string {
 	return fmt.Sprintf("%d:%02d:%02d", min/60, min%60, sec%60)
 }
 
+// Duration2Frame converts a Duration value to Frame.
+func Duration2Frame(d time.Duration) Frame {
+	return Frame(d.Milliseconds() / 42)
+}
+
 // Point describes a point in the map.
 type Point struct {
 	// X and Y coordinates of the point
