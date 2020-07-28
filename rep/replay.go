@@ -5,8 +5,11 @@ package rep
 
 import (
 	"math"
+	"sort"
+	"time"
 
 	"github.com/icza/screp/rep/repcmd"
+	"github.com/icza/screp/rep/repcore"
 )
 
 // Replay models an SC:BW replay.
@@ -31,25 +34,21 @@ func (r *Replay) Compute() {
 		return
 	}
 
-	numPlayers := len(r.Header.Players)
+	players := r.Header.Players
+	numPlayers := len(players)
 
 	c := &Computed{
 		PlayerDescs:    make([]*PlayerDesc, numPlayers),
 		PIDPlayerDescs: make(map[byte]*PlayerDesc, numPlayers),
 	}
+	r.Computed = c
 
-	for i, p := range r.Header.Players {
+	for i, p := range players {
 		pd := &PlayerDesc{
 			PlayerID: p.ID,
 		}
 		c.PlayerDescs[i] = pd
 		c.PIDPlayerDescs[p.ID] = pd
-	}
-
-	// For winners detection, keep track of team sizes:
-	teamSizes := map[byte]int{}
-	for _, p := range r.Header.Players {
-		teamSizes[p.Team]++
 	}
 
 	if r.Commands != nil {
@@ -59,8 +58,8 @@ func (r *Replay) Compute() {
 		type pidCmdsWrapper struct {
 			cmds []repcmd.Cmd
 		}
-		pidCmdsWrappers := make(map[byte]*pidCmdsWrapper, len(r.Header.Players))
-		for _, p := range r.Header.Players {
+		pidCmdsWrappers := make(map[byte]*pidCmdsWrapper, numPlayers)
+		for _, p := range players {
 			pidCmdsWrappers[p.ID] = &pidCmdsWrapper{
 				cmds: make([]repcmd.Cmd, 0, len(r.Commands.Cmds)/numPlayers), // Estimate even cmd distribution for fewer reallocations
 			}
@@ -86,9 +85,6 @@ func (r *Replay) Compute() {
 			switch x := cmd.(type) {
 			case *repcmd.LeaveGameCmd:
 				c.LeaveGameCmds = append(c.LeaveGameCmds, x)
-				if pid := r.Header.PIDPlayers[x.PlayerID]; pid != nil {
-					teamSizes[pid.Team]--
-				}
 			case *repcmd.ChatCmd:
 				c.ChatCmds = append(c.ChatCmds, x)
 			}
@@ -97,7 +93,7 @@ func (r *Replay) Compute() {
 		// Search for last commands:
 		// Make a local copy of the PIDPlayerDescs map to keep track of
 		// players we still need this info for:
-		pidPlayerDescs := make(map[byte]*PlayerDesc, len(r.Header.Players))
+		pidPlayerDescs := make(map[byte]*PlayerDesc, numPlayers)
 		for pid, pd := range c.PIDPlayerDescs {
 			// Optimization: Only include players that do have commands:
 			if pd.CmdCount > 0 {
@@ -124,59 +120,6 @@ func (r *Replay) Compute() {
 			delete(pidPlayerDescs, pd.PlayerID)
 		}
 
-		// Complete winners detection: largest remaining team wins
-		// (if there were Leave game commands)
-		if len(c.LeaveGameCmds) > 0 {
-			maxTeam, maxSize := byte(0), -1
-			for team, size := range teamSizes {
-				if size > maxSize {
-					maxTeam, maxSize = team, size
-				}
-			}
-			// Are winners detectable?
-			if maxSize > 0 {
-				// Is there only one team with max size?
-				count := 0
-				for _, size := range teamSizes {
-					if size == maxSize {
-						count++
-					}
-				}
-				if count == 1 {
-					// We have our winners!
-					c.WinnerTeam = maxTeam
-				}
-			}
-		}
-		// If winners are not detectable and there are no Leave game commands,
-		// it's most likely due to the replay saver left first.
-		// Replay saver is the one who receives the chat messages.
-		// If we have chat commands, declare the replay saver's team the loser.
-		// (Note chat is saved since patch 1.16, released on 2008-11-25.)
-		// If there is only one team besides the loser (2 teams altogether), we have our winner.
-		if c.WinnerTeam == 0 && len(c.LeaveGameCmds) == 0 && len(c.ChatCmds) > 0 && len(teamSizes) == 2 {
-			// rep saver might be an observer, so must check if there's a player for him/her:
-			if repSaver := r.Header.PIDPlayers[c.ChatCmds[0].PlayerID]; repSaver != nil {
-				loserTeam := repSaver.Team
-				for team := range teamSizes {
-					if team != loserTeam {
-						c.WinnerTeam = team
-						break
-					}
-				}
-			}
-		}
-		// Also if there are 2 players and 2 Game leave commands,
-		// and they are on different teams, declare the 2nd leaver the winner
-		// (this might be the case if an obs saved the replay).
-		if c.WinnerTeam == 0 && len(r.Header.Players) == 2 && len(c.LeaveGameCmds) == 2 {
-			p1 := r.Header.PIDPlayers[c.LeaveGameCmds[0].PlayerID]
-			p2 := r.Header.PIDPlayers[c.LeaveGameCmds[1].PlayerID]
-			if p1 != nil && p2 != nil && p1.Team != p2.Team {
-				c.WinnerTeam = p2.Team
-			}
-		}
-
 		// Calculate APMs and EAPMs:
 		for _, pd := range c.PlayerDescs {
 			if pd.LastCmdFrame == 0 {
@@ -186,6 +129,17 @@ func (r *Replay) Compute() {
 			pd.APM = int32(float64(pd.CmdCount)/mins + 0.5)
 			pd.EAPM = int32(float64(pd.EffectiveCmdCount)/mins + 0.5)
 		}
+
+		if r.Header.Type == repcore.GameTypeMelee {
+			for i, p := range players {
+				if p.Type == repcore.PlayerTypeHuman && c.PlayerDescs[i].APM < 25 {
+					c.PlayerDescs[i].Observer = true
+				}
+			}
+			r.computeMeleeTeams()
+		}
+
+		r.computeWinners()
 	}
 
 	if r.MapData != nil {
@@ -209,6 +163,231 @@ func (r *Replay) Compute() {
 	}
 
 	r.Computed = c
+}
+
+// computeMeleeTeams computes the teams in melee games based on player Alliance commands.
+//
+// If teams can be computed, also rearranges Header.Players and Computed.PlayerDescs
+// according to new teams.
+func (r *Replay) computeMeleeTeams() {
+	players := r.Header.Players
+	if len(players) < 2 {
+		return
+	}
+
+	c := r.Computed
+	pds := c.PlayerDescs
+
+	// Fast lookup map for observers:
+	pidObservers := map[byte]bool{}
+	for _, pd := range c.PlayerDescs {
+		pidObservers[pd.PlayerID] = pd.Observer
+	}
+
+	// Only compute if we don't yet have team info (if all teams are the same):
+	var nonObsPlayer *Player
+	for i, p := range players {
+		if pds[i].Observer {
+			continue
+		}
+		if nonObsPlayer == nil {
+			nonObsPlayer = p
+		} else {
+			if p.Team != nonObsPlayer.Team {
+				return
+			}
+		}
+	}
+
+	pidSlotIDs := map[byte][]byte{}
+	// By default all players are allied to themselves only:
+	for i, p := range players {
+		if pds[i].Observer {
+			continue
+		}
+		pidSlotIDs[p.ID] = []byte{byte(p.SlotID)}
+	}
+
+	// Stop after ~90 seconds: use the "initial" teams
+	frameLimit := repcore.Duration2Frame(90 * time.Second)
+	for _, cmd := range r.Commands.Cmds {
+		if cmd.BaseCmd().Frame > frameLimit {
+			break
+		}
+		if ac, ok := cmd.(*repcmd.AllianceCmd); ok {
+			if pidObservers[ac.PlayerID] {
+				continue
+			}
+			pidSlotIDs[ac.PlayerID] = ac.SlotIDs
+		}
+	}
+
+	// Check if set alliances are consistent:
+	// For each A=>B alliance there must be a B=>A
+	// Build maps for fast lookups:
+	slotIDPlayerDescs := map[byte]*PlayerDesc{}
+	for i, p := range players {
+		if !pds[i].Observer {
+			slotIDPlayerDescs[byte(p.SlotID)] = pds[i]
+		}
+	}
+	slotIDSlotIDs := map[byte][]byte{}
+	for pid, slotIDs := range pidSlotIDs {
+		if p := r.Header.PIDPlayers[pid]; p != nil {
+			slotIDSlotIDs[byte(p.SlotID)] = slotIDs
+		}
+	}
+	// Now check the consistency:
+	for pid, slotIDs := range pidSlotIDs {
+		p := r.Header.PIDPlayers[pid]
+		if p == nil {
+			continue
+		}
+		slotIDA := byte(p.SlotID)
+		for _, slotIDB := range slotIDs {
+			if slotIDA == slotIDB {
+				continue
+			}
+			if pd := slotIDPlayerDescs[slotIDB]; pd == nil || pd.Observer {
+				continue
+			}
+			// There is a slotIDA => slotIDB alliance, there must be a slotIDB => slotIDA:
+			found := false
+			for _, slotIDC := range slotIDSlotIDs[slotIDB] {
+				if slotIDC == slotIDA {
+					// found!
+					found = true
+					break
+				}
+			}
+			if !found {
+				// Alliance is inconsistent, do not change teams:
+				return
+			}
+		}
+	}
+
+	// Found matching alliances! Assign new teams.
+	// Start clean:
+	for _, p := range players {
+		p.Team = 0
+	}
+	team := byte(1)
+	for i, p := range players {
+		if pds[i].Observer {
+			continue // We handle observers last
+		}
+		if p.Team != 0 {
+			continue // Already assigned
+		}
+		p.Team = team
+		// All teammates get the same team
+		for _, slotID := range pidSlotIDs[p.ID] {
+			if pd := slotIDPlayerDescs[slotID]; pd != nil && !pd.Observer {
+				r.Header.PIDPlayers[pd.PlayerID].Team = team
+			}
+		}
+		team++
+	}
+	// Last assign highest team to observers:
+	for i, p := range players {
+		if pds[i].Observer {
+			p.Team = team
+		}
+	}
+
+	// Re-sort Header.Players and Computed.PlayerDescs
+	type wrapper struct {
+		p  *Player
+		pd *PlayerDesc
+	}
+	ws := make([]wrapper, len(players))
+	for i, p := range players {
+		ws[i] = wrapper{p: p, pd: pds[i]}
+	}
+	sort.Slice(ws, func(i, j int) bool {
+		return ws[i].p.Team < ws[j].p.Team
+	})
+	for i := range ws {
+		players[i] = ws[i].p
+		pds[i] = ws[i].pd
+	}
+}
+
+// computeWinners attempts to compute winners using "largest remaining team wins" principle.
+func (r *Replay) computeWinners() {
+	c := r.Computed
+
+	// Keep track of team sizes:
+	teamSizes := map[byte]int{}
+	for i, p := range r.Header.Players {
+		if !c.PlayerDescs[i].Observer {
+			teamSizes[p.Team]++
+		}
+	}
+
+	for _, lgcmd := range c.LeaveGameCmds {
+		if p := r.Header.PIDPlayers[lgcmd.PlayerID]; p != nil {
+			teamSizes[p.Team]--
+		}
+	}
+
+	// Complete winners detection: largest remaining team wins
+	// (if there were Leave game commands)
+	if len(c.LeaveGameCmds) > 0 {
+		maxTeam, maxSize := byte(0), -1
+		for team, size := range teamSizes {
+			if size > maxSize {
+				maxTeam, maxSize = team, size
+			}
+		}
+		// Are winners detectable?
+		if maxSize > 0 {
+			// Is there only one team with max size?
+			count := 0
+			for _, size := range teamSizes {
+				if size == maxSize {
+					count++
+				}
+			}
+			if count == 1 {
+				// We have our winners!
+				c.WinnerTeam = maxTeam
+				return
+			}
+		}
+	}
+
+	// If winners could not be detected so far and there are no Leave game commands,
+	// it's most likely due to the replay saver left first.
+	// Replay saver is the one who receives the chat messages.
+	// If we have chat commands, declare the replay saver's team the loser.
+	// (Note chat is saved since patch 1.16, released on 2008-11-25.)
+	// If there is only one team besides the loser (2 teams altogether), we have our winner.
+	if len(c.LeaveGameCmds) == 0 && len(c.ChatCmds) > 0 && len(teamSizes) == 2 {
+		// rep saver might be an observer, so must check if there's a player for him/her:
+		if repSaver := r.Header.PIDPlayers[c.ChatCmds[0].PlayerID]; repSaver != nil {
+			loserTeam := repSaver.Team
+			for team := range teamSizes {
+				if team != loserTeam {
+					c.WinnerTeam = team
+					return
+				}
+			}
+		}
+	}
+
+	// Also if there are 2 players and 2 Game leave commands,
+	// and they are on different teams, declare the 2nd leaver the winner
+	// (this might be the case if an obs saved the replay).
+	if len(r.Header.Players) == 2 && len(c.LeaveGameCmds) == 2 {
+		p1 := r.Header.PIDPlayers[c.LeaveGameCmds[0].PlayerID]
+		p2 := r.Header.PIDPlayers[c.LeaveGameCmds[1].PlayerID]
+		if p1 != nil && p2 != nil && p1.Team != p2.Team {
+			c.WinnerTeam = p2.Team
+			return
+		}
+	}
 }
 
 // angleToClock converts an angle given in radian to an hour clock value

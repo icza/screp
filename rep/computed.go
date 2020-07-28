@@ -55,6 +55,10 @@ type PlayerDesc struct {
 	// compared to the center of the map, expressed using the clock,
 	// e.g. 1 o'clock, 6 o'clock etc.
 	StartDirection int32
+
+	// Observer tells if the player only observes the game and should be excluded
+	// from matchup.
+	Observer bool
 }
 
 // Redundancy returns the redundancy percent of the player's commands.
