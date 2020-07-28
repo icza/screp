@@ -199,6 +199,10 @@ func (r *Replay) computeMeleeTeams() {
 		}
 	}
 
+	// NOTE: all computers have pid=255, but since they don't set alliance
+	// and they can't be allied with, they won't cause trouble.
+	// Only when their team is set, don't try set teams of "faulty" teammates.
+
 	pidSlotIDs := map[byte][]byte{}
 	// By default all players are allied to themselves only:
 	for i, p := range players {
@@ -281,10 +285,12 @@ func (r *Replay) computeMeleeTeams() {
 			continue // Already assigned
 		}
 		p.Team = team
-		// All teammates get the same team
-		for _, slotID := range pidSlotIDs[p.ID] {
-			if pd := slotIDPlayerDescs[slotID]; pd != nil && !pd.Observer {
-				r.Header.PIDPlayers[pd.PlayerID].Team = team
+		if p.Type != repcore.PlayerTypeComputer { // pidSlotIDs is not valid for computers.
+			// All teammates get the same team
+			for _, slotID := range pidSlotIDs[p.ID] {
+				if pd := slotIDPlayerDescs[slotID]; pd != nil && !pd.Observer {
+					r.Header.PIDPlayers[pd.PlayerID].Team = team
+				}
 			}
 		}
 		team++
