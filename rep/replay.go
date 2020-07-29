@@ -56,7 +56,8 @@ func (r *Replay) Compute() {
 		// We could use a map, mapping from pid to player's commands, but then when building it,
 		// we would have to always reassign the slice. Instead we use a pointer to a wrapper struct:
 		type pidCmdsWrapper struct {
-			cmds []repcmd.Cmd
+			cmds   []repcmd.Cmd
+			builds int // build commands count
 		}
 		pidCmdsWrappers := make(map[byte]*pidCmdsWrapper, numPlayers)
 		for _, p := range players {
@@ -71,11 +72,8 @@ func (r *Replay) Compute() {
 			// We don't have PlayerDescs for them, so must check:
 			baseCmd := cmd.BaseCmd()
 			if pd := c.PIDPlayerDescs[baseCmd.PlayerID]; pd != nil {
-				pid := baseCmd.PlayerID
-				pd := c.PIDPlayerDescs[pid]
 				pd.CmdCount++
-
-				pidCmdsWrapper := pidCmdsWrappers[pid]
+				pidCmdsWrapper := pidCmdsWrappers[baseCmd.PlayerID]
 				pidCmdsWrapper.cmds = append(pidCmdsWrapper.cmds, cmd)
 				baseCmd.IneffKind = CmdIneffKind(pidCmdsWrapper.cmds, len(pidCmdsWrapper.cmds)-1)
 				if baseCmd.IneffKind.Effective() {
@@ -87,6 +85,10 @@ func (r *Replay) Compute() {
 				c.LeaveGameCmds = append(c.LeaveGameCmds, x)
 			case *repcmd.ChatCmd:
 				c.ChatCmds = append(c.ChatCmds, x)
+			case *repcmd.BuildCmd:
+				if pidCmdsWrapper := pidCmdsWrappers[baseCmd.PlayerID]; pidCmdsWrapper != nil {
+					pidCmdsWrapper.builds++
+				}
 			}
 		}
 
@@ -132,8 +134,14 @@ func (r *Replay) Compute() {
 
 		if r.Header.Type == repcore.GameTypeMelee {
 			for i, p := range players {
+				// Observer if:
+				//   - Human
+				//   - APM < 25
+				//   - Has less than 5 build commands
 				if p.Type == repcore.PlayerTypeHuman && c.PlayerDescs[i].APM < 25 {
-					p.Observer = true
+					if pidCmdsWrapper := pidCmdsWrappers[p.ID]; pidCmdsWrapper == nil || pidCmdsWrapper.builds < 5 {
+						p.Observer = true
+					}
 				}
 			}
 			r.computeMeleeTeams()
