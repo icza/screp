@@ -311,7 +311,7 @@ func (r *Replay) computeMeleeTeams() {
 	for i, p := range players {
 		ws[i] = wrapper{p: p, pd: pds[i]}
 	}
-	sort.Slice(ws, func(i, j int) bool {
+	sort.SliceStable(ws, func(i, j int) bool {
 		return ws[i].p.Team < ws[j].p.Team
 	})
 	for i := range ws {
