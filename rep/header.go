@@ -79,15 +79,16 @@ func (h *Header) MapSize() string {
 
 // Matchup returns the matchup, the race letters of players in team order,
 // inserting 'v' between different teams, e.g. "PvT" or "PTZvZTP".
+// Observers are excluded from the matchup.
 func (h *Header) Matchup() string {
 	m := make([]rune, 0, 9)
-	var prevTeam byte
-	for i, p := range h.Players {
-		if i > 0 && p.Team != prevTeam {
+	first, prevTeam := true, byte(0)
+	for _, p := range h.Players {
+		if !first && p.Team != prevTeam {
 			m = append(m, 'v')
 		}
 		m = append(m, p.Race.Letter)
-		prevTeam = p.Team
+		first, prevTeam = false, p.Team
 	}
 	return string(m)
 }
