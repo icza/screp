@@ -84,6 +84,9 @@ func (h *Header) Matchup() string {
 	m := make([]rune, 0, 9)
 	first, prevTeam := true, byte(0)
 	for _, p := range h.Players {
+		if p.Observer {
+			continue
+		}
 		if !first && p.Team != prevTeam {
 			m = append(m, 'v')
 		}
