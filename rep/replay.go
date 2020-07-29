@@ -133,7 +133,7 @@ func (r *Replay) Compute() {
 		if r.Header.Type == repcore.GameTypeMelee {
 			for i, p := range players {
 				if p.Type == repcore.PlayerTypeHuman && c.PlayerDescs[i].APM < 25 {
-					c.PlayerDescs[i].Observer = true
+					p.Observer = true
 				}
 			}
 			r.computeMeleeTeams()
@@ -178,16 +178,10 @@ func (r *Replay) computeMeleeTeams() {
 	c := r.Computed
 	pds := c.PlayerDescs
 
-	// Fast lookup map for observers:
-	pidObservers := map[byte]bool{}
-	for _, pd := range c.PlayerDescs {
-		pidObservers[pd.PlayerID] = pd.Observer
-	}
-
 	// Only compute if we don't yet have team info (if all teams are the same):
 	var nonObsPlayer *Player
-	for i, p := range players {
-		if pds[i].Observer {
+	for _, p := range players {
+		if p.Observer {
 			continue
 		}
 		if nonObsPlayer == nil {
@@ -205,8 +199,8 @@ func (r *Replay) computeMeleeTeams() {
 
 	pidSlotIDs := map[byte][]byte{}
 	// By default all players are allied to themselves only:
-	for i, p := range players {
-		if pds[i].Observer {
+	for _, p := range players {
+		if p.Observer {
 			continue
 		}
 		pidSlotIDs[p.ID] = []byte{byte(p.SlotID)}
@@ -219,7 +213,7 @@ func (r *Replay) computeMeleeTeams() {
 			break
 		}
 		if ac, ok := cmd.(*repcmd.AllianceCmd); ok {
-			if pidObservers[ac.PlayerID] {
+			if p := r.Header.PIDPlayers[ac.PlayerID]; p != nil && p.Observer {
 				continue
 			}
 			pidSlotIDs[ac.PlayerID] = ac.SlotIDs
@@ -229,10 +223,10 @@ func (r *Replay) computeMeleeTeams() {
 	// Check if set alliances are consistent:
 	// For each A=>B alliance there must be a B=>A
 	// Build maps for fast lookups:
-	slotIDPlayerDescs := map[byte]*PlayerDesc{}
-	for i, p := range players {
-		if !pds[i].Observer {
-			slotIDPlayerDescs[byte(p.SlotID)] = pds[i]
+	slotIDPlayers := map[byte]*Player{}
+	for _, p := range players {
+		if !p.Observer {
+			slotIDPlayers[byte(p.SlotID)] = p
 		}
 	}
 	slotIDSlotIDs := map[byte][]byte{}
@@ -252,7 +246,7 @@ func (r *Replay) computeMeleeTeams() {
 			if slotIDA == slotIDB {
 				continue
 			}
-			if pd := slotIDPlayerDescs[slotIDB]; pd == nil || pd.Observer {
+			if p := slotIDPlayers[slotIDB]; p == nil || p.Observer {
 				continue
 			}
 			// There is a slotIDA => slotIDB alliance, there must be a slotIDB => slotIDA:
@@ -277,8 +271,8 @@ func (r *Replay) computeMeleeTeams() {
 		p.Team = 0
 	}
 	team := byte(1)
-	for i, p := range players {
-		if pds[i].Observer {
+	for _, p := range players {
+		if p.Observer {
 			continue // We handle observers last
 		}
 		if p.Team != 0 {
@@ -288,16 +282,16 @@ func (r *Replay) computeMeleeTeams() {
 		if p.Type != repcore.PlayerTypeComputer { // pidSlotIDs is not valid for computers.
 			// All teammates get the same team
 			for _, slotID := range pidSlotIDs[p.ID] {
-				if pd := slotIDPlayerDescs[slotID]; pd != nil && !pd.Observer {
-					r.Header.PIDPlayers[pd.PlayerID].Team = team
+				if p := slotIDPlayers[slotID]; p != nil && !p.Observer {
+					p.Team = team
 				}
 			}
 		}
 		team++
 	}
 	// Last assign highest team to observers:
-	for i, p := range players {
-		if pds[i].Observer {
+	for _, p := range players {
+		if p.Observer {
 			p.Team = team
 		}
 	}
@@ -326,8 +320,8 @@ func (r *Replay) computeWinners() {
 
 	// Keep track of team sizes:
 	teamSizes := map[byte]int{}
-	for i, p := range r.Header.Players {
-		if !c.PlayerDescs[i].Observer {
+	for _, p := range r.Header.Players {
+		if !p.Observer {
 			teamSizes[p.Team]++
 		}
 	}

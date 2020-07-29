@@ -134,6 +134,11 @@ type Player struct {
 
 	// Color of the player
 	Color *repcore.Color
+
+	// Observer tells if the player only observes the game and should be excluded
+	// from matchup.
+	// This is not stored in replays, this is a calculated property.
+	Observer bool
 }
 
 // HeaderDebug holds debug info for the header section.
