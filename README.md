@@ -6,9 +6,6 @@
 
 StarCraft: Brood War replay parser.
 
-Initially this parser was developed as part of the [repMastered](https://github.com/icza/repmastered)
-project (the initial history can be found there), but was outsourced here as a separate project.
-
 The package is designed to be used by other packages or apps, and is safe for concurrent use.
 There is also an example CLI app that can be used standalone.
 
@@ -42,11 +39,13 @@ Or simply:
 
 The easiest is to download the binary release prepared for your platform from the [Releases](https://github.com/icza/screp/releases) page. Extract the archive and start using `screp`.
 
-If you want to build `screp` from source, then simply run the following command:
+If you want to build `screp` from source, then simply clone the project and build the `cmd/screp` app:
 
-	go get -u github.com/icza/screp/...
+	git clone https://github.com/icza/screp
+	cd screp/cmd/screp
+	go build
 
-This will clone this repo if you don't have it yet, or update it if you already have it in your `$GOPATH`, and will build and place `screp` inside `$GOPATH/bin`.
+This will create an executable binary in the `cmd/screp` folder, ready to run.
 
 ## Example projects using this
 
