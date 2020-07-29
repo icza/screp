@@ -138,10 +138,8 @@ func (r *Replay) Compute() {
 				//   - Human
 				//   - APM < 25
 				//   - Has less than 5 build commands
-				if p.Type == repcore.PlayerTypeHuman && c.PlayerDescs[i].APM < 25 {
-					if pidCmdsWrapper := pidCmdsWrappers[p.ID]; pidCmdsWrapper == nil || pidCmdsWrapper.builds < 5 {
-						p.Observer = true
-					}
+				if p.Type == repcore.PlayerTypeHuman && c.PlayerDescs[i].APM < 25 && pidCmdsWrappers[p.ID].builds < 5 {
+					p.Observer = true
 				}
 			}
 			r.computeMeleeTeams()
