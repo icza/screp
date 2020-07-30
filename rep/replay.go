@@ -56,10 +56,10 @@ func (r *Replay) Compute() {
 		// We could use a map, mapping from pid to player's commands, but then when building it,
 		// we would have to always reassign the slice. Instead we use a pointer to a wrapper struct:
 		type pidCmdsWrapper struct {
-			cmds   []repcmd.Cmd
-			builds int // build commands count
+			cmds []repcmd.Cmd
 		}
 		pidCmdsWrappers := make(map[byte]*pidCmdsWrapper, numPlayers)
+		pidBuilds := make(map[byte]int, numPlayers) // Build commands count per player
 		for _, p := range players {
 			pidCmdsWrappers[p.ID] = &pidCmdsWrapper{
 				cmds: make([]repcmd.Cmd, 0, len(r.Commands.Cmds)/numPlayers), // Estimate even cmd distribution for fewer reallocations
@@ -86,9 +86,7 @@ func (r *Replay) Compute() {
 			case *repcmd.ChatCmd:
 				c.ChatCmds = append(c.ChatCmds, x)
 			case *repcmd.BuildCmd:
-				if pidCmdsWrapper := pidCmdsWrappers[baseCmd.PlayerID]; pidCmdsWrapper != nil {
-					pidCmdsWrapper.builds++
-				}
+				pidBuilds[baseCmd.PlayerID]++
 			}
 		}
 
@@ -97,7 +95,7 @@ func (r *Replay) Compute() {
 		// players we still need this info for:
 		pidPlayerDescs := make(map[byte]*PlayerDesc, numPlayers)
 		for pid, pd := range c.PIDPlayerDescs {
-			// Optimization: Only include players that do have commands:
+			// Only include players that do have commands:
 			if pd.CmdCount > 0 {
 				pidPlayerDescs[pid] = pd
 			}
@@ -133,15 +131,7 @@ func (r *Replay) Compute() {
 		}
 
 		if r.Header.Type == repcore.GameTypeMelee {
-			for i, p := range players {
-				// Observer if:
-				//   - Human
-				//   - APM < 25
-				//   - Has less than 5 build commands
-				if p.Type == repcore.PlayerTypeHuman && c.PlayerDescs[i].APM < 25 && pidCmdsWrappers[p.ID].builds < 5 {
-					p.Observer = true
-				}
-			}
+			r.detectMeleeObservers(pidBuilds)
 			r.computeMeleeTeams()
 		}
 
@@ -153,7 +143,7 @@ func (r *Replay) Compute() {
 		cx, cy := float64(r.Header.MapWidth*16), float64(r.Header.MapHeight*16)
 		// Lookup start location of players
 		sls := r.MapData.StartLocations
-		for i, p := range r.Header.Players {
+		for i, p := range players {
 			for j := range sls {
 				if p.SlotID == uint16(sls[j].SlotID) {
 					pt := &sls[j].Point
@@ -167,8 +157,31 @@ func (r *Replay) Compute() {
 			}
 		}
 	}
+}
 
-	r.Computed = c
+// detectMeleeObservers detects observers in Melee games.
+func (r *Replay) detectMeleeObservers(pidBuilds map[byte]int) {
+	c := r.Computed
+
+	// Criteria for observers:
+	//   - Human
+	//   - APM < 25
+	//   - Has less than 5 build commands
+
+	numObs := 0
+	for i, p := range r.Header.Players {
+		if p.Type == repcore.PlayerTypeHuman && c.PlayerDescs[i].APM < 25 && pidBuilds[p.ID] < 5 {
+			p.Observer = true
+			numObs++
+		}
+	}
+
+	// If less than 2 non-obs players remained, undo:
+	if len(r.Header.Players)-numObs < 2 {
+		for _, p := range r.Header.Players {
+			p.Observer = false
+		}
+	}
 }
 
 // computeMeleeTeams computes the teams in melee games based on player Alliance commands.
