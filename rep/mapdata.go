@@ -10,7 +10,9 @@ type MapData struct {
 	// 0x2f: StarCraft beta
 	// 0x3b: 1.00-1.03 StarCraft and above ("hybrid")
 	// 0x3f: 1.04 StarCraft and above ("hybrid")
+	// 0x40: StarCraft Remastered
 	// 0xcd: Brood War
+	// 0xce: Brood War Remastered
 	Version uint16
 
 	// TileSet defines the tile set used on the map.
