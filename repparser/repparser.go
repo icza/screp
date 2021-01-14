@@ -52,6 +52,14 @@ import (
 	"github.com/icza/screp/rep/repcmd"
 	"github.com/icza/screp/rep/repcore"
 	"github.com/icza/screp/repparser/repdecoder"
+
+	// For Parse Korean characters
+
+	"strings"
+	. "unicode/utf8"
+
+	"golang.org/x/text/encoding/korean"
+	"golang.org/x/text/transform"
 )
 
 const (
@@ -774,12 +782,29 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 // cString returns a 0x00 byte terminated string from the given buffer.
 func cString(data []byte) string {
 	// Find 0x00 byte:
+	checkUTF8, _ := DecodeRune(data)
+	if checkUTF8 == 65533 {
+		return koreanString(data)
+	}
 	for i, ch := range data {
 		if ch == 0 {
 			return string(data[:i]) // excludes terminating 0x00
 		}
 	}
-
 	// Couldn't find? As a fallback, just return the whole as-is:
 	return string(data)
+}
+
+// return Korean String from given buffer
+func koreanString(data []byte) string {
+	euckrDec := korean.EUCKR.NewDecoder()
+	euckrSrc := string(data)
+
+	kString, _, err := transform.String(euckrDec, euckrSrc)
+	res := strings.ReplaceAll(kString, "\u0000", "")
+	res2 := strings.ReplaceAll(res, "�", "")
+	if err != nil {
+		panic(err)
+	}
+	return string(res2)
 }
