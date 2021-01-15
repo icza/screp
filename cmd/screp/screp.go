@@ -11,6 +11,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"runtime"
@@ -79,12 +80,15 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf(tempFile.Name())
 		parseRep(tempFile.Name())
 		// 4. return result
-		fmt.Fprintf(w, "Successfully Uploaded File\n")
+		fmt.Fprintf(w, tempFile.Name())
 	}
 }
 func setupRoutes() {
 	http.HandleFunc("/upload", uploadFile)
-	http.ListenAndServe(":443", nil)
+	err := http.ListenAndServeTLS(":443", "cert.crt", "private.key", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
 
 func parseRep(repFile string) {
