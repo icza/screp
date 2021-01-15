@@ -10,6 +10,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"runtime"
 
@@ -39,71 +41,81 @@ var (
 	indent = flag.Bool("indent", true, "use indentation when formatting output")
 )
 
-func main() {
-	flag.Parse()
+func uploadFile(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("method:", r.Method)
+	userid := r.FormValue("userid") // x will be "" if parameter is not set
+	fmt.Println("userid:", userid)
+	if r.Method == "POST" {
+		// 1. parse input
+		r.ParseMultipartForm(10 << 20)
+		// 2. retrieve file
+		file, handler, err := r.FormFile("repFile")
+		if err != nil {
+			fmt.Println("Error Retrieving the File")
+			fmt.Println(err)
+			return
+		}
+		defer file.Close()
+		fmt.Printf("Uploaded File: %+v\n", handler.Filename)
+		fmt.Printf("File Size: %+v\n", handler.Size)
+		fmt.Printf("MIME Header: %+v\n", handler.Header)
 
-	if *version {
-		printVersion()
-		return
+		path := "replays/" + userid
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			os.Mkdir(path, 0700)
+		}
+
+		// 3. write temporary file on our server
+		tempFile, err := ioutil.TempFile(path, "upload-*.rep")
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer tempFile.Close()
+		fileBytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			fmt.Println(err)
+		}
+		tempFile.Write(fileBytes)
+		fmt.Printf(tempFile.Name())
+		parseRep(tempFile.Name())
+		// 4. return result
+		fmt.Fprintf(w, "Successfully Uploaded File\n")
 	}
+}
+func setupRoutes() {
+	http.HandleFunc("/upload", uploadFile)
+	http.ListenAndServe(":443", nil)
+}
 
-	args := flag.Args()
-	if len(args) < 1 {
-		printUsage()
-		os.Exit(1)
-	}
+func parseRep(repFile string) {
 
-	r, err := repparser.ParseFile(args[0])
+	fmt.Println(repFile[:len(repFile)-4])
+	r, err := repparser.ParseFile(repFile)
 	if err != nil {
 		fmt.Printf("Failed to parse replay: %v\n", err)
 		os.Exit(2)
 	}
-
-	if *computed {
-		r.Compute()
-	}
-
-	// Zero values in replay the user do not wish to see:
-	if !*header {
-		r.Header = nil
-	}
-	if !*mapData {
-		r.MapData = nil
-	} else {
-		if !*mapTiles {
-			r.MapData.Tiles = nil
-		}
-		if !*mapResLoc {
-			r.MapData.MineralFields = nil
-			r.MapData.Geysers = nil
-		}
-	}
-	if !*cmds {
-		r.Commands = nil
-	}
-
+	r.Compute()
 	var enc *json.Encoder
 
-	if *outFile == "" {
-		enc = json.NewEncoder(os.Stdout)
-	} else {
-		fp, err := os.Create(*outFile)
-		if err != nil {
-			fmt.Printf("Failed to create output file: %v\n", err)
-			os.Exit(3)
+	fp, err := os.Create(repFile[:len(repFile)-4] + ".json")
+	if err != nil {
+		fmt.Printf("Failed to create output file: %v\n", err)
+		os.Exit(3)
+	}
+	defer func() {
+		if err := fp.Close(); err != nil {
+			panic(err)
 		}
-		defer func() {
-			if err := fp.Close(); err != nil {
-				panic(err)
-			}
-		}()
-		enc = json.NewEncoder(fp)
-	}
+	}()
+	enc = json.NewEncoder(fp)
 
-	if *indent {
-		enc.SetIndent("", "  ")
-	}
+	enc.SetIndent("", "  ")
 	enc.Encode(r)
+}
+
+func main() {
+	setupRoutes()
 }
 
 func printVersion() {

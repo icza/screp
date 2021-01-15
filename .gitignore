@@ -1,3 +1,4 @@
 *.rep
 *.json
 *.exe
+/replays
