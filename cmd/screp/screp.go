@@ -84,7 +84,16 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func setupRoutes() {
+	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Set("Content-type", "text/html")
+		fmt.Fprint(res, "<h1>Replay Server</h1>")
+	})
+
 	http.HandleFunc("/upload", uploadFile)
+	fs := http.FileServer(http.Dir("./replays"))
+
+	http.Handle("/replays/", http.StripPrefix("/replays", fs))
+
 	err := http.ListenAndServeTLS(":443", "cert.crt", "private.key", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
