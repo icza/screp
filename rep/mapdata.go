@@ -18,6 +18,12 @@ type MapData struct {
 	// TileSet defines the tile set used on the map.
 	TileSet *repcore.TileSet
 
+	// Scenario name
+	Name string
+
+	// Scenario description
+	Description string
+
 	// Tiles is the tile data of the map (within the tile set): width x height elements.
 	// 1 Tile is 32 units (pixel)
 	Tiles []uint16
