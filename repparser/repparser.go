@@ -56,7 +56,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.5.0"
+	Version = "v1.5.1"
 )
 
 var (
@@ -699,6 +699,7 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 		scenarioNameIdx        uint16 // String index
 		scenarioDescriptionIdx uint16 // String index
 		stringsData            []byte
+		extendedStringsData    bool
 	)
 
 	// Map data section is a sequence of sub-sections:
@@ -773,34 +774,60 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 			scenarioNameIdx = sr.getUint16()
 			scenarioDescriptionIdx = sr.getUint16()
 		case "STR ": // String data
+			// There might be multiple "STR " sections, use the one that does contain strings.
 			stringsStart := int(sr.pos)
-			count := sr.getUint16()
-			// Here comes count offsets (all uint16). Each offset tells the start of a 0-terminated string (that are after the offset).
-			// The offset value is from stringsStart.
-			// Offset 0 is 0, and it's not included here. It denotes the missing or empty string. First value is offset1.
-
-			// Do not parse offsets and strings here, we only use 2 which we'll do in the end. Just "save" the slice for later use.
-			_ = count
-			stringsData = data[stringsStart:ssEndPos]
+			count := sr.getUint16() // Number of following offsets (uint16 values)
+			// Check if section is "big" enough to hold strings too
+			if stringsStart+2+int(count)*2+1 < int(ssEndPos) {
+				// Here come count offsets (all uint16). Each offset tells the start of a 0-terminated string.
+				// The offset value is from stringsStart.
+				// Offset 0 is 0, and it's not included here. It denotes the default / missing string. First value is offset1.
+				// Do not parse offsets and strings here, we only use 2 which we'll do in the end. Just "save" the slice for later use.
+				stringsData = data[stringsStart:ssEndPos]
+			}
+		case "STRx": // Extended String data
+			// This section is identical to "STR " except that all uint16 values are uint32 values.
+			stringsStart := int(sr.pos)
+			count := sr.getUint32() // Number of following offsets (uint32 values)
+			// Check if section is "big" enough to hold strings too
+			if stringsStart+4+int(count)*4+1 < int(ssEndPos) {
+				// Here come count offsets (all uint32). Each offset tells the start of a 0-terminated string.
+				// The offset value is from stringsStart.
+				// Offset 0 is 0, and it's not included here. It denotes the default / missing string. First value is offset1.
+				// Do not parse offsets and strings here, we only use 2 which we'll do in the end. Just "save" the slice for later use.
+				stringsData = data[stringsStart:ssEndPos]
+				extendedStringsData = true
+			}
 		}
 
 		// Part or all of the sub-section might be unprocessed, skip the unprocessed bytes
 		sr.pos = ssEndPos
 	}
 
-	// Get a string from the map strings identified by its index.
+	// Get a string from the strings identified by its index.
 	getString := func(idx uint16) string {
 		if idx == 0 {
 			return ""
 		}
-		pos := uint32(idx) * 2 // idx is 1-based (0th offset is not included), but stringsData contains the offsets count
-		if int(pos+2) >= len(stringsData) {
-			log.Printf("Invalid strings index: %d", idx)
+		var offsetSize uint32
+		if extendedStringsData {
+			offsetSize = 4
+		} else {
+			offsetSize = 2
+		}
+		pos := uint32(idx) * offsetSize // idx is 1-based (0th offset is not included), but stringsData contains the offsets count too
+		if int(pos+offsetSize-1) >= len(stringsData) {
+			log.Printf("Invalid strings index: %d, map: %s", idx, r.Header.Map)
 			return ""
 		}
-		offset := (&sliceReader{b: stringsData, pos: pos}).getUint16()
+		var offset uint32
+		if extendedStringsData {
+			offset = (&sliceReader{b: stringsData, pos: pos}).getUint32()
+		} else {
+			offset = uint32((&sliceReader{b: stringsData, pos: pos}).getUint16())
+		}
 		if int(offset) >= len(stringsData) {
-			log.Printf("Invalid strings offset: %d (strings index: %d)", offset, idx)
+			log.Printf("Invalid strings offset: %d, strings index: %d, map: %s", offset, idx, r.Header.Map)
 			return ""
 		}
 		return cString(stringsData[offset:])
