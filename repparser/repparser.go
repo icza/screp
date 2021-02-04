@@ -47,16 +47,18 @@ import (
 	"runtime"
 	"sort"
 	"time"
+	"unicode/utf8"
 
 	"github.com/icza/screp/rep"
 	"github.com/icza/screp/rep/repcmd"
 	"github.com/icza/screp/rep/repcore"
 	"github.com/icza/screp/repparser/repdecoder"
+	"golang.org/x/text/encoding/korean"
 )
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.5.1"
+	Version = "v1.6.0"
 )
 
 var (
@@ -295,15 +297,15 @@ func parseHeader(data []byte, r *rep.Replay, cfg Config) error {
 	h.Engine = repcore.EngineByID(data[0x00])
 	h.Frames = repcore.Frame(bo.Uint32(data[0x01:]))
 	h.StartTime = time.Unix(int64(bo.Uint32(data[0x08:])), 0) // replay stores seconds since EPOCH
-	h.Title = cString(data[0x18 : 0x18+28])
+	h.Title, h.RawTitle = cString(data[0x18 : 0x18+28])
 	h.MapWidth = bo.Uint16(data[0x34:])
 	h.MapHeight = bo.Uint16(data[0x36:])
 	h.AvailSlotsCount = data[0x39]
 	h.Speed = repcore.SpeedByID(data[0x3a])
 	h.Type = repcore.GameTypeByID(bo.Uint16(data[0x3c:]))
 	h.SubType = bo.Uint16(data[0x3e:])
-	h.Host = cString(data[0x48 : 0x48+24])
-	h.Map = cString(data[0x61 : 0x61+26])
+	h.Host, h.RawHost = cString(data[0x48 : 0x48+24])
+	h.Map, h.RawMap = cString(data[0x61 : 0x61+26])
 
 	// Parse players
 	const (
@@ -322,7 +324,7 @@ func parseHeader(data []byte, r *rep.Replay, cfg Config) error {
 		p.Type = repcore.PlayerTypeByID(ps[8])
 		p.Race = repcore.RaceByID(ps[9])
 		p.Team = ps[10]
-		p.Name = cString(ps[11 : 11+25])
+		p.Name, p.RawName = cString(ps[11 : 11+25])
 
 		if i < maxPlayers {
 			p.Color = repcore.ColorByID(bo.Uint32(data[0x251+i*4:]))
@@ -465,7 +467,7 @@ func parseCommands(data []byte, r *rep.Replay, cfg Config) error {
 			case repcmd.TypeIDChat:
 				chatCmd := &repcmd.ChatCmd{Base: base}
 				chatCmd.SenderSlotID = sr.getByte()
-				chatCmd.Message = cString(sr.readSlice(80))
+				chatCmd.Message, _ = cString(sr.readSlice(80))
 				cmd = chatCmd
 
 			case repcmd.TypeIDVision:
@@ -830,7 +832,8 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 			log.Printf("Invalid strings offset: %d, strings index: %d, map: %s", offset, idx, r.Header.Map)
 			return ""
 		}
-		return cString(stringsData[offset:])
+		s, _ := cString(stringsData[offset:])
+		return s
 	}
 
 	md.Name = getString(scenarioNameIdx)
@@ -839,15 +842,30 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 	return nil
 }
 
+var koreanDecoder = korean.EUCKR.NewDecoder()
+
 // cString returns a 0x00 byte terminated string from the given buffer.
-func cString(data []byte) string {
+// If the string is not valid UTF-8, tries to decode it as EUC-KR (also known as Code Page 949).
+// Returns both the decoded and the original string.
+func cString(data []byte) (s string, orig string) {
 	// Find 0x00 byte:
 	for i, ch := range data {
 		if ch == 0 {
-			return string(data[:i]) // excludes terminating 0x00
+			data = data[:i] // excludes terminating 0x00
+
+			if !utf8.Valid(data) {
+				// Try korean
+				if krdata, err := koreanDecoder.Bytes(data); err == nil {
+					return string(krdata), string(data)
+				}
+			}
+			break // Either UTF-8 or custom decoding failed
 		}
 	}
 
-	// Couldn't find? As a fallback, just return the whole as-is:
-	return string(data)
+	// Return data as string.
+	// We end up here if no terminating 0 char found, or string is valid UTF-8, or it is invalid but custom decoding failed.
+	// Either way:
+	s = string(data)
+	return s, s
 }

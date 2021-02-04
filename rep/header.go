@@ -25,6 +25,9 @@ type Header struct {
 	// Title is the game name / title
 	Title string
 
+	// RawTitle is the undecoded Title data. It may differ from Title if the latter is invalid UTF-8.
+	RawTitle string `json:"-"`
+
 	// Size of the map
 	MapWidth, MapHeight uint16
 
@@ -44,8 +47,14 @@ type Header struct {
 	// Host is the game creator's name.
 	Host string
 
+	// RawHost is the undecoded Host data. It may differ from Host if the latter is invalid UTF-8.
+	RawHost string `json:"-"`
+
 	// Map name
 	Map string
+
+	// RawMap is the undecoded Map data. It may differ from Map if the latter is invalid UTF-8.
+	RawMap string `json:"-"`
 
 	// Slots contains all players of the game (including open/closed slots)
 	Slots []*Player `json:"-"`
@@ -135,6 +144,9 @@ type Player struct {
 
 	// Name of the player
 	Name string
+
+	// RawName is the undecoded Name data. It may differ from Name if the latter is invalid UTF-8.
+	RawName string `json:"-"`
 
 	// Color of the player
 	Color *repcore.Color
