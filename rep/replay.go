@@ -107,7 +107,7 @@ func (r *Replay) Compute() {
 			if pd == nil {
 				continue
 			}
-			if baseCmd.Frame > r.Header.Frames {
+			if baseCmd.Frame > r.Header.Frames || baseCmd.Frame < 0 {
 				// Bad parsing or corrupted replay may result in invalid frames,
 				// do not use such a bad frame.
 				continue
