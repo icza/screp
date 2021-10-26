@@ -896,7 +896,7 @@ func parsePlayerColors(data []byte, r *rep.Replay, cfg Config) error {
 		if pos+16 > len(data) {
 			break
 		}
-		if c := repcore.ColorByFootprint(data[i*16 : i*16+16]); c != nil {
+		if c := repcore.ColorByFootprint(data[pos : pos+16]); c != nil {
 			p.Color = c
 		}
 	}
