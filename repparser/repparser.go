@@ -43,6 +43,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"runtime"
 	"sort"
@@ -58,7 +59,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.6.1"
+	Version = "v1.7.0"
 )
 
 var (
@@ -160,42 +161,49 @@ type Section struct {
 	// ParseFunc defines the function responsible to process (parse / interpret)
 	// the section's data.
 	ParseFunc func(data []byte, r *rep.Replay, cfg Config) error
+
+	// Optional section string ID
+	StrID string
 }
 
 // Sections describes the subsequent Sections of replays
 var Sections = []*Section{
-	{0, 0x04, parseReplayID},
-	{1, 0x279, parseHeader},
-	{2, 0, parseCommands},
-	{3, 0, parseMapData},
+	{ID: 0, Size: 0x04, ParseFunc: parseReplayID},
+	{ID: 1, Size: 0x279, ParseFunc: parseHeader},
+	{ID: 2, Size: 0, ParseFunc: parseCommands},
+	{ID: 3, Size: 0, ParseFunc: parseMapData},
+	{ID: 4, Size: 0x300, ParseFunc: parsePlayerNames},
+	{ID: 5, Size: 0x100, ParseFunc: parseSkin, StrID: "SKIN"},
+	{ID: 6, Size: 0x1c, ParseFunc: parseLmts, StrID: "LMTS"},
+	{ID: 7, Size: 0x08, ParseFunc: parseBfix, StrID: "BFIX"},
+	{ID: 8, Size: 0x80, ParseFunc: parsePlayerColors, StrID: "CCLR"},
 }
 
 // Named sections
 var (
-	SectionReplayID = Sections[0]
-	SectionHeader   = Sections[1]
-	SectionCommands = Sections[2]
-	SectionMapData  = Sections[3]
+	SectionReplayID     = Sections[0]
+	SectionHeader       = Sections[1]
+	SectionCommands     = Sections[2]
+	SectionMapData      = Sections[3]
+	SectionPlayerNames  = Sections[4]
+	SectionSkin         = Sections[5]
+	SectionLmts         = Sections[6]
+	SectionBfix         = Sections[7]
+	SectionPlayerColors = Sections[8]
 )
 
 // parse parses an SC:BW replay using the given Decoder.
 func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 	r := new(rep.Replay)
 
-	// Determine last section that needs to be decoded / parsed:
-	var lastSection *Section
-	switch {
-	case cfg.MapData:
-		lastSection = SectionMapData
-	case cfg.Commands:
-		lastSection = SectionCommands
-	default:
-		lastSection = SectionHeader
-	}
+	// We have to read all sections, some data (e.g. player colors) are positioned after map data.
 
 	// A replay is a sequence of sections:
 	for _, s := range Sections {
 		if err := dec.NewSection(); err != nil {
+			if err == repdecoder.ErrNoMoreSections {
+				break
+			}
 			return nil, fmt.Errorf("Decoder.NewSection() error: %v", err)
 		}
 
@@ -215,6 +223,9 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 			err = ErrNotReplayFile // In case of Replay ID section return special error
 		}
 		if err != nil {
+			if err == io.EOF {
+				break // New sections with StrID are optional
+			}
 			return nil, fmt.Errorf("Decoder.Section() error: %v", err)
 		}
 
@@ -227,10 +238,6 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 			if err = s.ParseFunc(data, r, cfg); err != nil {
 				return nil, fmt.Errorf("ParseFunc() error (sectionID: %d): %v", s.ID, err)
 			}
-		}
-
-		if s == lastSection {
-			break
 		}
 	}
 
@@ -838,6 +845,61 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 
 	md.Name = getString(scenarioNameIdx)
 	md.Description = getString(scenarioDescriptionIdx)
+
+	return nil
+}
+
+// parsePlayerNames processes the player names data.
+func parsePlayerNames(data []byte, r *rep.Replay, cfg Config) error {
+	// Note: these player names parse well even when decoding is unknown in header
+	// (are these always UTF-8?)
+	for i, p := range r.Header.Slots {
+		pos := i * 96
+		if pos+96 > len(data) {
+			break
+		}
+
+		if p.Type != repcore.PlayerTypeInactive {
+			name, orig := cString(data[pos : pos+96])
+			if name != "" {
+				p.Name, p.RawName = name, orig
+			}
+		}
+	}
+
+	return nil
+}
+
+// parseSkin processes the skin data.
+func parseSkin(data []byte, r *rep.Replay, cfg Config) error {
+	// TODO 0x100 bytes of data
+	return nil
+}
+
+// parseLmts processes the lmts data.
+func parseLmts(data []byte, r *rep.Replay, cfg Config) error {
+	// TODO 0x1c bytes of data
+	return nil
+}
+
+// parseBfix processes the bfix data.
+func parseBfix(data []byte, r *rep.Replay, cfg Config) error {
+	// TODO 0x08 bytes of data
+	return nil
+}
+
+// parsePlayerColors processes the player colors data.
+func parsePlayerColors(data []byte, r *rep.Replay, cfg Config) error {
+	// 16 bytes footprint for all colors.
+	for i, p := range r.Header.Slots {
+		pos := i * 16
+		if pos+16 > len(data) {
+			break
+		}
+		if c := repcore.ColorByFootprint(data[i*16 : i*16+16]); c != nil {
+			p.Color = c
+		}
+	}
 
 	return nil
 }

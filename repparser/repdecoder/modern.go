@@ -18,6 +18,16 @@ type modernDecoder struct {
 }
 
 func (d *modernDecoder) Section(size int32) (result []byte, err error) {
+	if d.sectionsCounter > 5 {
+		// These are the sections added in modern replays.
+		if _, err = d.readInt32(); err != nil { // This is the StrID of the section, not checking it
+			return
+		}
+		if _, err = d.readInt32(); err != nil {
+			return
+		}
+	}
+
 	var count int32
 	if count, result, err = d.sectionHeader(size); result != nil || err != nil {
 		return

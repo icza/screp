@@ -29,6 +29,7 @@ var (
 // Decoder wraps a Section method for decoding a section of a given size.
 type Decoder interface {
 	// NewSection must be called between sections.
+	// ErrNoMoreSections is returned if the replay has no more sections.
 	NewSection() error
 
 	// Section decodes a section of the given size.
@@ -184,10 +185,17 @@ func (d *decoder) readInt32() (n int32, err error) {
 	return
 }
 
+var ErrNoMoreSections = errors.New("no more sections")
+
 func (d *decoder) NewSection() (err error) {
 	d.sectionsCounter++
 
-	if d.rf == repFormatModern121 {
+	switch d.rf {
+	case repFormatLegacy:
+		if d.sectionsCounter == 5 {
+			return ErrNoMoreSections // Legacy replays only have 4 sections
+		}
+	case repFormatModern121:
 		// There is a 4-byte encoded length between sections:
 		if d.sectionsCounter == 2 {
 			if _, err = d.readInt32(); err != nil {
