@@ -879,6 +879,16 @@ func parseSkin(data []byte, r *rep.Replay, cfg Config) error {
 // parseLmts processes the lmts data.
 func parseLmts(data []byte, r *rep.Replay, cfg Config) error {
 	// TODO 0x1c bytes of data
+
+	// bo := binary.LittleEndian // ByteOrder reader: little-endian
+	// bo.Uint32(data[0x0:])     // Images limit
+	// bo.Uint32(data[0x4:])     // Sprites limit
+	// bo.Uint32(data[0x8:])     // Lone limit
+	// bo.Uint32(data[0x0c:])    // Units limit
+	// bo.Uint32(data[0x10:])    // Bullets limit
+	// bo.Uint32(data[0x14:])    // Orders limit
+	// bo.Uint32(data[0x18:])    // Fog sprites limit
+
 	return nil
 }
 
