@@ -51,6 +51,7 @@ var (
 	cmds        = flag.Bool("cmds", false, "print player commands")
 	computed    = flag.Bool("computed", true, "print computed / derived data")
 	mapDataHash = flag.String("mapDataHash", "", "calculate and print the hash of map data section using the given algorithm;\n"+validMapDataHashes)
+	dumpMapData = flag.Bool("dumpMapData", false, "dump the raw map data (CHK) instead of JSON replay info\nuse it with the 'outfile' flag")
 	outFile     = flag.String("outfile", "", "optional output file name")
 
 	indent = flag.Bool("indent", true, "use indentation when formatting output")
@@ -94,10 +95,38 @@ func main() {
 		}
 	}
 
+	if *dumpMapData {
+		cfg.Debug = true
+	}
+
 	r, err := repparser.ParseFileConfig(args[0], cfg)
 	if err != nil {
 		fmt.Printf("Failed to parse replay: %v\n", err)
 		os.Exit(ExitCodeFailedToParseReplay)
+	}
+
+	var destination = os.Stdout
+
+	if *outFile != "" {
+		foutput, err := os.Create(*outFile)
+		if err != nil {
+			fmt.Printf("Failed to create output file: %v\n", err)
+			os.Exit(ExitCodeFailedToCreateOutputFile)
+		}
+		defer func() {
+			if err := foutput.Close(); err != nil {
+				panic(err)
+			}
+		}()
+
+		destination = foutput
+	}
+
+	if *dumpMapData {
+		if _, err := destination.Write(r.MapData.Debug.Data); err != nil {
+			fmt.Printf("Failed to write map data: %v\n", err)
+		}
+		return
 	}
 
 	// custom holds any custom data we want in the output and is not part of rep.Replay
@@ -131,23 +160,7 @@ func main() {
 		r.Commands = nil
 	}
 
-	var enc *json.Encoder
-
-	if *outFile == "" {
-		enc = json.NewEncoder(os.Stdout)
-	} else {
-		fp, err := os.Create(*outFile)
-		if err != nil {
-			fmt.Printf("Failed to create output file: %v\n", err)
-			os.Exit(ExitCodeFailedToCreateOutputFile)
-		}
-		defer func() {
-			if err := fp.Close(); err != nil {
-				panic(err)
-			}
-		}()
-		enc = json.NewEncoder(fp)
-	}
+	enc := json.NewEncoder(destination)
 
 	if *indent {
 		enc.SetIndent("", "  ")
@@ -163,7 +176,9 @@ func main() {
 		}{r, custom}
 	}
 
-	enc.Encode(valueToEncode)
+	if err := enc.Encode(valueToEncode); err != nil {
+		fmt.Printf("Failed to encode output: %v\n", err)
+	}
 }
 
 func printVersion() {
