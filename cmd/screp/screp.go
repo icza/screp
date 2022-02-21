@@ -1,6 +1,6 @@
 /*
 
-Package main is a simple CLI app to parse and display information about
+A simple CLI app to parse and display information about
 a StarCraft: Brood War replay passed as a CLI argument.
 
 */
@@ -50,7 +50,7 @@ var (
 	mapResLoc   = flag.Bool("mapres", false, "print map data resource locations (minerals and geysers); valid with 'map'")
 	cmds        = flag.Bool("cmds", false, "print player commands")
 	computed    = flag.Bool("computed", true, "print computed / derived data")
-	mapDataHash = flag.String("mapDataHash", "", "calculate and print the hash of map data section using the given algorithm;\n"+validMapDataHashes)
+	mapDataHash = flag.String("mapDataHash", "", "calculate and print the hash of map data section too using the given algorithm;\n"+validMapDataHashes)
 	dumpMapData = flag.Bool("dumpMapData", false, "dump the raw map data (CHK) instead of JSON replay info\nuse it with the 'outfile' flag")
 	outFile     = flag.String("outfile", "", "optional output file name")
 
@@ -138,7 +138,7 @@ func main() {
 
 	if mapDataHasher != nil {
 		mapDataHasher.Write(r.MapData.Debug.Data)
-		custom["mapDataHash"] = hex.EncodeToString(mapDataHasher.Sum(nil))
+		custom["MapDataHash"] = hex.EncodeToString(mapDataHasher.Sum(nil))
 	}
 
 	// Zero values in replay the user do not wish to see:
