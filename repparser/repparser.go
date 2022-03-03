@@ -59,7 +59,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.7.0"
+	Version = "v1.7.1"
 )
 
 var (
@@ -759,16 +759,20 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 				x := sr.getUint16()
 				y := sr.getUint16()
 				unitID := sr.getUint16()
-				sr.pos += 2             // uint16 Type of relation to another building (i.e. add-on, nydus link)
-				sr.pos += 2             // uint16 Flags of special properties (e.g. cloacked, burrowed etc.)
-				sr.pos += 2             // uint16 valid elements flag
-				ownerID := sr.getByte() // 0-based SlotID
+				sr.pos += 2                 // uint16 Type of relation to another building (i.e. add-on, nydus link)
+				sr.pos += 2                 // uint16 Flags of special properties (e.g. cloacked, burrowed etc.)
+				sr.pos += 2                 // uint16 valid elements flag
+				ownerID := sr.getByte()     // 0-based SlotID
+				sr.pos++                    // Hit points % (1-100)
+				sr.pos++                    // Shield points % (1-100)
+				sr.pos++                    // Energy points % (1-100)
+				resAmount := sr.getUint32() // Resource amount
 
 				switch unitID {
 				case repcmd.UnitIDMineralField1, repcmd.UnitIDMineralField2, repcmd.UnitIDMineralField3:
-					md.MineralFields = append(md.MineralFields, repcore.Point{X: x, Y: y})
+					md.MineralFields = append(md.MineralFields, rep.Resource{Point: repcore.Point{X: x, Y: y}, Amount: resAmount})
 				case repcmd.UnitIDVespeneGeyser:
-					md.Geysers = append(md.Geysers, repcore.Point{X: x, Y: y})
+					md.Geysers = append(md.Geysers, rep.Resource{Point: repcore.Point{X: x, Y: y}, Amount: resAmount})
 				case repcmd.UnitIDStartLocation:
 					md.StartLocations = append(md.StartLocations,
 						rep.StartLocation{Point: repcore.Point{X: x, Y: y}, SlotID: ownerID},

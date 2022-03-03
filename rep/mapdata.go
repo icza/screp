@@ -29,16 +29,25 @@ type MapData struct {
 	Tiles []uint16
 
 	// Mineral field locations on the map
-	MineralFields []repcore.Point
+	MineralFields []Resource
 
 	// Geyser locations on the map
-	Geysers []repcore.Point
+	Geysers []Resource
 
 	// StartLocations on the map
 	StartLocations []StartLocation
 
 	// Debug holds optional debug info.
 	Debug *MapDataDebug `json:"-"`
+}
+
+// Resource describes a resource (mineral field of vespene geyser).
+type Resource struct {
+	// Location of the resource
+	repcore.Point
+
+	// Amount of the resource
+	Amount uint32
 }
 
 // StartLocation describes a player start location on the map
