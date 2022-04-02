@@ -24,16 +24,16 @@ Usage is as simple as:
 
 	screp [FLAGS] repfile.rep
 
-Run with `-h` to see a list of available flags.
+Run with `-h` to see the list of available flags.
 
 Example to parse a file called `sample.rep`, and display replay header (included by default)
 and basic map data info (without tiles and resource location info):
 
-	s2prot -map=true sample.rep
+	screp -map=true sample.rep
 
 Or simply:
 
-	s2prot -map sample.rep
+	screp -map sample.rep
 	
 ## Installing the `screp` CLI app
 
