@@ -206,7 +206,7 @@ func (hc *HotkeyCmd) Params(verbose bool) string {
 type LeaveGameCmd struct {
 	*Base
 
-	// Speed is the new game speed.
+	// Reasom why the player left.
 	Reason *LeaveReason
 }
 

@@ -90,6 +90,13 @@ func (r *Replay) Compute() {
 			}
 		}
 
+		// Detect replay saver:
+		// Replay saver is the one who receives the chat messages.
+		// (Note chat is saved since patch 1.16, released on 2008-11-25.)
+		if len(c.ChatCmds) > 0 {
+			c.RepSaverPlayerID = &c.ChatCmds[0].PlayerID
+		}
+
 		// Search for last commands:
 		// Make a local copy of the PIDPlayerDescs map to keep track of
 		// players we still need this info for:
@@ -130,7 +137,10 @@ func (r *Replay) Compute() {
 			pd.EAPM = int32(float64(pd.EffectiveCmdCount)/mins + 0.5)
 		}
 
-		if r.Header.Type == repcore.GameTypeMelee {
+		switch r.Header.Type {
+		case repcore.GameTypeUMS:
+			r.computeUMSTeams()
+		case repcore.GameTypeMelee:
 			r.detectMeleeObservers(pidBuilds)
 			r.computeMeleeTeams()
 		}
@@ -156,6 +166,68 @@ func (r *Replay) Compute() {
 				}
 			}
 		}
+	}
+}
+
+// computeUMSTeams computes the teams in UMS games.
+//
+// Handles a special case: 1v1 game with observers.
+// Rules to detect this case:
+//   -there are only 2 human players on team 1
+//   -all other players are on team 2, and they have no train nor build commands
+//
+// If this case is detected, the players on team 1 are split into team 1 and 2,
+// and all players (observers) on the (original) team 2 are assiged to team 3, and marked as observers.
+func (r *Replay) computeUMSTeams() {
+	players := r.Header.Players
+	if len(players) < 2 {
+		return
+	}
+
+	obsCandidateIDs := map[byte]bool{}
+
+	for i, p := range players {
+		if p.Type != repcore.PlayerTypeHuman {
+			return // Non-human involved, don't get involved!
+		}
+		switch {
+		case i < 2: // candidates for 1v1 players
+			if p.Team != 1 {
+				return
+			}
+		default: // candidates for observers
+			if p.Team == 1 {
+				return
+			}
+			obsCandidateIDs[p.ID] = true
+		}
+	}
+
+	// Check if observers have no train or build commands
+	if len(players) > 2 {
+		if r.Commands == nil {
+			return
+		}
+		for _, cmd := range r.Commands.Cmds {
+			switch cmd.(type) {
+			case *repcmd.TrainCmd, *repcmd.BuildCmd:
+				if obsCandidateIDs[cmd.BaseCmd().PlayerID] {
+					return // An obs candidate have a train or build command, this is not the special case we're looking for
+				}
+			}
+		}
+	}
+
+	// Special case detected, proceed to re-teaming.
+
+	// 1v1 players
+	players[0].Team = 1
+	players[1].Team = 2
+
+	// Observers
+	for _, p := range players[2:] {
+		p.Team = 3
+		p.Observer = true
 	}
 }
 
@@ -335,77 +407,107 @@ func (r *Replay) computeMeleeTeams() {
 
 // computeWinners attempts to compute winners using "largest remaining team wins" principle.
 func (r *Replay) computeWinners() {
+	// Situation: game result (winners / losers) is not recorded in replays.
+	// We try to determine the winners based on the "largest remaining team wins" principle.
+	// The essence of this is to procedd Leave game commands and track remaining team sizes.
+	// Problems:
+	//   -Leave game commands are not recorded for computers
+	//   -Leave game c ommands are not recorded for the replay saver
+
 	c := r.Computed
 
-	// Keep track of team sizes:
-	teamSizes := map[byte]int{}
+	// Keep track of team sizes and computer counts:
+	nonObsPlayersCount := 0
+	teamSizes := map[byte]int{}      // Excluding computers
+	teamCompsCount := map[byte]int{} // Including only computers
+
 	for _, p := range r.Header.Players {
 		if !p.Observer {
-			teamSizes[p.Team]++
+			if p.Type == repcore.PlayerTypeComputer {
+				teamCompsCount[p.Team]++
+			} else {
+				teamSizes[p.Team]++
+			}
+			nonObsPlayersCount++
 		}
 	}
 
+	// If there is a team full of only computers, we can't detect winners.
+	for team := range teamCompsCount {
+		if teamSizes[team] == 0 {
+			return // This team only consists of computers
+		}
+	}
+
+	// Computers never leave, so use only non-computer sizes (teamSizes) ongoing.
+
+	// Keep only leave game commands of non-observers, which matters if / when we check the last of them.
+	leaveGameCmds := make([]*repcmd.LeaveGameCmd, 0, len(c.LeaveGameCmds)+1)
 	for _, lgcmd := range c.LeaveGameCmds {
 		if p := r.Header.PIDPlayers[lgcmd.PlayerID]; p != nil {
-			teamSizes[p.Team]--
+			if !p.Observer {
+				leaveGameCmds = append(leaveGameCmds, lgcmd)
+			}
 		}
+	}
+
+	// There is no Leave game command recorded for the replay saver.
+	// If we know the replay saver, "simulate" a leave game command
+	// for him/her as the last leave game command.
+	if c.RepSaverPlayerID != nil {
+		// rep saver might be an observer, so must check if there's a player for him/her:
+		if repSaver := r.Header.PIDPlayers[*c.RepSaverPlayerID]; repSaver != nil && !repSaver.Observer {
+			// Add virutal leave cmd
+			leaveGameCmds = append(leaveGameCmds, &repcmd.LeaveGameCmd{
+				Base: &repcmd.Base{
+					PlayerID: repSaver.ID, // Only PlayerID is needed / used
+				},
+			})
+		}
+	}
+
+	for _, lgcmd := range leaveGameCmds {
+		// lgcmd.PlayerID exists in PIDPlayers, was checked when assembled leaveGameCmds
+		teamSizes[r.Header.PIDPlayers[lgcmd.PlayerID].Team]--
+	}
+
+	if len(teamSizes) < 2 || // There are no multiple teams
+		len(leaveGameCmds) == 0 { // There were no Leave game commands, not even a "virtual" one,
+		// we just don't know who the winners are.
+		return
 	}
 
 	// Complete winners detection: largest remaining team wins
-	// (if there were Leave game commands)
-	if len(c.LeaveGameCmds) > 0 {
-		maxTeam, maxSize := byte(0), -1
-		for team, size := range teamSizes {
-			if size > maxSize {
-				maxTeam, maxSize = team, size
-			}
-		}
-		// Are winners detectable?
-		if maxSize > 0 {
-			// Is there only one team with max size?
-			count := 0
-			for _, size := range teamSizes {
-				if size == maxSize {
-					count++
-				}
-			}
-			if count == 1 {
-				// We have our winners!
-				c.WinnerTeam = maxTeam
-				return
-			}
+	maxTeam, maxSize := byte(0), -1
+	for team, size := range teamSizes {
+		if size > maxSize {
+			maxTeam, maxSize = team, size
 		}
 	}
-
-	// If winners could not be detected so far and there are no Leave game commands,
-	// it's most likely due to the replay saver left first.
-	// Replay saver is the one who receives the chat messages.
-	// If we have chat commands, declare the replay saver's team the loser.
-	// (Note chat is saved since patch 1.16, released on 2008-11-25.)
-	// If there is only one team besides the loser (2 teams altogether), we have our winner.
-	if len(c.LeaveGameCmds) == 0 && len(c.ChatCmds) > 0 && len(teamSizes) == 2 {
-		// rep saver might be an observer, so must check if there's a player for him/her:
-		if repSaver := r.Header.PIDPlayers[c.ChatCmds[0].PlayerID]; repSaver != nil {
-			loserTeam := repSaver.Team
-			for team := range teamSizes {
-				if team != loserTeam {
-					c.WinnerTeam = team
-					return
-				}
+	// Are winners detectable?
+	if maxSize > 0 {
+		// Is there only one team with max size?
+		count := 0
+		for _, size := range teamSizes {
+			if size == maxSize {
+				count++
 			}
 		}
-	}
-
-	// Also if there are 2 players and 2 Game leave commands,
-	// and they are on different teams, declare the 2nd leaver the winner
-	// (this might be the case if an obs saved the replay).
-	if len(r.Header.Players) == 2 && len(c.LeaveGameCmds) == 2 {
-		p1 := r.Header.PIDPlayers[c.LeaveGameCmds[0].PlayerID]
-		p2 := r.Header.PIDPlayers[c.LeaveGameCmds[1].PlayerID]
-		if p1 != nil && p2 != nil && p1.Team != p2.Team {
-			c.WinnerTeam = p2.Team
+		if count == 1 {
+			// We have our winners!
+			c.WinnerTeam = maxTeam
 			return
 		}
+	}
+
+	// There is no single largest team.
+	// If there are multiple teams (not just one), and if all (non-obs) players left (we have a leave game command for all),
+	// declare the last leaver's team the winner team.
+	// Often this happens if an observer saves the replay, and he/she is the one last leaving (there's no leave game command for observers).
+	if len(leaveGameCmds) == nonObsPlayersCount {
+		playerID := leaveGameCmds[len(leaveGameCmds)-1].PlayerID
+		c.WinnerTeam = r.Header.PIDPlayers[playerID].Team
+		return
 	}
 }
 

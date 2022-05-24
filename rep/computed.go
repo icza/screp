@@ -19,6 +19,9 @@ type Computed struct {
 	// algorithm. It's 0 if winner team is unknown.
 	WinnerTeam byte
 
+	// PlayerID of the replay saver, if known
+	RepSaverPlayerID *byte
+
 	// PlayerDescs contains player descriptions in team order.
 	PlayerDescs []*PlayerDesc
 
