@@ -174,7 +174,7 @@ func (r *Replay) Compute() {
 // Handles a special case: 1v1 game with observers.
 // Rules to detect this case:
 //   -there are only 2 human players on team 1
-//   -all other players are on team 2, and they have no train nor build commands
+//   -all other players are on a different team, and they have no train nor build commands
 //
 // If this case is detected, the players on team 1 are split into team 1 and 2,
 // and all players (observers) on the (original) team 2 are assiged to team 3, and marked as observers.
@@ -412,7 +412,7 @@ func (r *Replay) computeWinners() {
 	// The essence of this is to procedd Leave game commands and track remaining team sizes.
 	// Problems:
 	//   -Leave game commands are not recorded for computers
-	//   -Leave game c ommands are not recorded for the replay saver
+	//   -Leave game commands are not recorded for the replay saver
 
 	c := r.Computed
 
@@ -457,7 +457,7 @@ func (r *Replay) computeWinners() {
 	if c.RepSaverPlayerID != nil {
 		// rep saver might be an observer, so must check if there's a player for him/her:
 		if repSaver := r.Header.PIDPlayers[*c.RepSaverPlayerID]; repSaver != nil && !repSaver.Observer {
-			// Add virutal leave cmd
+			// Add virutal leave game cmd
 			leaveGameCmds = append(leaveGameCmds, &repcmd.LeaveGameCmd{
 				Base: &repcmd.Base{
 					PlayerID: repSaver.ID, // Only PlayerID is needed / used
