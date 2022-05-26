@@ -173,29 +173,34 @@ func (r *Replay) Compute() {
 //
 // Handles a special case: 1v1 game with observers.
 // Rules to detect this case:
-//   -there are only 2 human players on team 1
+//   -there are only 2 human players on team 1, having train or build commands
 //   -all other players are on a different team, and they have no train nor build commands
 //
 // If this case is detected, the players on team 1 are split into team 1 and 2,
 // and all players (observers) on the (original) team 2 are assiged to team 3, and marked as observers.
 func (r *Replay) computeUMSTeams() {
+	// We'll have to check player commands later, so if it's not parsed, don't waste any time:
+	if r.Commands == nil {
+		return
+	}
+
 	players := r.Header.Players
 	if len(players) < 2 {
 		return
 	}
 
-	obsCandidateIDs := map[byte]bool{}
+	playerCandidateIDs, obsCandidateIDs := map[byte]bool{}, map[byte]bool{}
 
 	for i, p := range players {
 		if p.Type != repcore.PlayerTypeHuman {
 			return // Non-human involved, don't get involved!
 		}
-		switch {
-		case i < 2: // candidates for 1v1 players
+		if i < 2 { // candidates for 1v1 players
 			if p.Team != 1 {
 				return
 			}
-		default: // candidates for observers
+			playerCandidateIDs[p.ID] = true
+		} else { // candidates for observers
 			if p.Team == 1 {
 				return
 			}
@@ -203,19 +208,26 @@ func (r *Replay) computeUMSTeams() {
 		}
 	}
 
-	// Check if observers have no train or build commands
-	if len(players) > 2 {
-		if r.Commands == nil {
-			return
-		}
-		for _, cmd := range r.Commands.Cmds {
-			switch cmd.(type) {
-			case *repcmd.TrainCmd, *repcmd.BuildCmd:
-				if obsCandidateIDs[cmd.BaseCmd().PlayerID] {
-					return // An obs candidate have a train or build command, this is not the special case we're looking for
+	// Check if player candidates have train or build commands, and obs candidates don't.
+	playerTrainBuildCount := 0
+	noObsCandidates := len(obsCandidateIDs) == 0
+
+	for _, cmd := range r.Commands.Cmds {
+		switch cmd.(type) {
+		case *repcmd.TrainCmd, *repcmd.BuildCmd:
+			if playerCandidateIDs[cmd.BaseCmd().PlayerID] {
+				playerTrainBuildCount++
+				if noObsCandidates {
+					break // We got what we want, no obs candidates, no need to continue
 				}
+			} else if obsCandidateIDs[cmd.BaseCmd().PlayerID] {
+				return // An obs candidate have a train or build command, this is not the special case we're looking for
 			}
 		}
+	}
+
+	if playerTrainBuildCount == 0 {
+		return // Player candidates have no train nor build commands, this is not the special case we're looking for
 	}
 
 	// Special case detected, proceed to re-teaming.
