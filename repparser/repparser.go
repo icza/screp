@@ -31,6 +31,8 @@ https://github.com/neivv/jssuh
 
 Map Data format:
 
+https://www.starcraftai.com/wiki/CHK_Format
+
 http://www.staredit.net/wiki/index.php/Scenario.chk
 
 http://blog.naver.com/PostView.nhn?blogId=wisdomswrap&logNo=60119755717&parentCategoryNo=&categoryNo=19&viewDate=&isShowPopularPosts=false&from=postView
@@ -59,7 +61,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.8.1"
+	Version = "v1.8.2"
 )
 
 var (
@@ -734,6 +736,26 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 				if height > r.Header.MapHeight {
 					r.Header.MapHeight = height
 				}
+			}
+		case "OWNR": // StarCraft Player Types
+			count := uint32(12) // 12 bytes, 1 for each player
+			if count > ssSize {
+				count = ssSize
+			}
+			owners := sr.readSlice(count)
+			md.PlayerOwners = make([]*repcore.PlayerOwner, len(owners))
+			for i, id := range owners {
+				md.PlayerOwners[i] = repcore.PlayerOwnerByID(id)
+			}
+		case "SIDE": // Player races
+			count := uint32(12) // 12 bytes, 1 for each player
+			if count > ssSize {
+				count = ssSize
+			}
+			sides := sr.readSlice(count)
+			md.PlayerSides = make([]*repcore.PlayerSide, len(sides))
+			for i, id := range sides {
+				md.PlayerSides[i] = repcore.PlayerSideByID(id)
 			}
 		case "MTXM": // Tile sub-section
 			// map_width*map_height (a tile is an uint16 value)

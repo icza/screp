@@ -24,6 +24,12 @@ type MapData struct {
 	// Scenario description
 	Description string
 
+	// PlayerOwners defines the player types (player owners).
+	PlayerOwners []*repcore.PlayerOwner
+
+	// PlayerSides defines the player sides (player races).
+	PlayerSides []*repcore.PlayerSide
+
 	// Tiles is the tile data of the map (within the tile set): width x height elements.
 	// 1 Tile is 32 units (pixel)
 	Tiles []uint16
@@ -39,6 +45,16 @@ type MapData struct {
 
 	// Debug holds optional debug info.
 	Debug *MapDataDebug `json:"-"`
+}
+
+// MaxHumanPlayers returns the max number of human players on the map.
+func (md *MapData) MaxHumanPlayers() (count int) {
+	for _, owner := range md.PlayerOwners {
+		if owner == repcore.PlayerOwnerHumanOpenSlot {
+			count++
+		}
+	}
+	return
 }
 
 // Resource describes a resource (mineral field of vespene geyser).

@@ -389,3 +389,89 @@ func TileSetByID(ID uint16) *TileSet {
 	}
 	return &TileSet{UnknownEnum(ID), ID}
 }
+
+// PlayerOwner describes a player owner.
+type PlayerOwner struct {
+	Enum
+
+	// ID as it appears in replays
+	ID uint8
+}
+
+// PlayerOwners is an enumeration of the possible player owners
+var PlayerOwners = []*PlayerOwner{
+	{Enum{"Inactive"}, 0x00},
+	{Enum{"Computer (game)"}, 0x01},
+	{Enum{"Occupied by Human Player"}, 0x02},
+	{Enum{"Rescue Passive"}, 0x03},
+	{Enum{"Unused"}, 0x04},
+	{Enum{"Computer"}, 0x05},
+	{Enum{"Human (Open Slot)"}, 0x06},
+	{Enum{"Neutral"}, 0x07},
+	{Enum{"Closed slot"}, 0x08},
+}
+
+// Named player owners
+var (
+	PlayerOwnerInactive              = PlayerOwners[0]
+	PlayerOwnerComputerGame          = PlayerOwners[1]
+	PlayerOwnerOccupiedByHumanPlayer = PlayerOwners[2]
+	PlayerOwnerRescuePassive         = PlayerOwners[3]
+	PlayerOwnerUnused                = PlayerOwners[4]
+	PlayerOwnerComputer              = PlayerOwners[5]
+	PlayerOwnerHumanOpenSlot         = PlayerOwners[6]
+	PlayerOwnerNeutral               = PlayerOwners[7]
+	PlayerOwnerClosedSlot            = PlayerOwners[8]
+)
+
+// PlayerOwnerByID returns the PlayerOwner for a given ID.
+// A new PlayerOwner with Unknown name is returned if one is not found
+// for the given ID (preserving the unknown ID).
+func PlayerOwnerByID(ID uint8) *PlayerOwner {
+	if int(ID) < len(PlayerOwners) {
+		return PlayerOwners[ID]
+	}
+	return &PlayerOwner{UnknownEnum(ID), ID}
+}
+
+// PlayerSide describes a player side (race).
+type PlayerSide struct {
+	Enum
+
+	// ID as it appears in replays
+	ID uint8
+}
+
+// PlayerSides is an enumeration of the possible player sides
+var PlayerSides = []*PlayerSide{
+	{Enum{"Zerg"}, 0x00},
+	{Enum{"Terran"}, 0x01},
+	{Enum{"Protoss"}, 0x02},
+	{Enum{"Invalid (Independent)"}, 0x03},
+	{Enum{"Invalid (Neutral)"}, 0x04},
+	{Enum{"User Selectable"}, 0x05},
+	{Enum{"Random (Forced)"}, 0x06}, // Acts as a selected race
+	{Enum{"Inactive"}, 0x07},
+}
+
+// Named player sides
+var (
+	PlayerSideZerg               = PlayerSides[0]
+	PlayerSideTerran             = PlayerSides[1]
+	PlayerSideProtoss            = PlayerSides[2]
+	PlayerSideInvalidIndependent = PlayerSides[3]
+	PlayerSideInvalidNeutral     = PlayerSides[4]
+	PlayerSideUserSelectable     = PlayerSides[5]
+	PlayerSideRandomForced       = PlayerSides[6]
+	PlayerSideInactive           = PlayerSides[7]
+)
+
+// PlayerSideByID returns the PlayerSide for a given ID.
+// A new PlayerSide with Unknown name is returned if one is not found
+// for the given ID (preserving the unknown ID).
+func PlayerSideByID(ID uint8) *PlayerSide {
+	if int(ID) < len(PlayerSides) {
+		return PlayerSides[ID]
+	}
+	return &PlayerSide{UnknownEnum(ID), ID}
+}
