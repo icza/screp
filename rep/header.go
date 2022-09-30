@@ -15,6 +15,14 @@ type Header struct {
 	// Engine used to play the game and save the replay
 	Engine *repcore.Engine
 
+	// Version contains information about the replay version.
+	// Since version is not stored in replays, this only designates certain version ranges deducted from replay format.
+	// Current possible values are:
+	//   - "-1.16": version is 1.16 or older
+	//   - "1.18-1.20": version is 1.18..1.20
+	//   - "1.21+": version is 1.21 or newer
+	Version string
+
 	// Frames is the number of frames. There are approximately ~23.81 frames in
 	// a second. (1 frame = 0.042 second to be exact).
 	Frames repcore.Frame

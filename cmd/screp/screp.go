@@ -1,8 +1,6 @@
 /*
-
 A simple CLI app to parse and display information about
 a StarCraft: Brood War replay passed as a CLI argument.
-
 */
 package main
 
@@ -26,7 +24,7 @@ import (
 
 const (
 	appName    = "screp"
-	appVersion = "v1.7.2"
+	appVersion = "v1.7.3"
 	appAuthor  = "Andras Belicza"
 	appHome    = "https://github.com/icza/screp"
 )

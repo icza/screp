@@ -28,6 +28,9 @@ var (
 
 // Decoder wraps a Section method for decoding a section of a given size.
 type Decoder interface {
+	// RepFormat returns the replay format
+	RepFormat() RepFormat
+
 	// NewSection must be called between sections.
 	// ErrNoMoreSections is returned if the replay has no more sections.
 	NewSection() error
@@ -63,7 +66,7 @@ func NewFromFile(name string) (d Decoder, err error) {
 		return nil, fmt.Errorf("not a file: %s", name)
 	}
 
-	var rf repFormat
+	var rf RepFormat
 	if stat.Size() >= 30 {
 		fileHeader := make([]byte, 30)
 		if _, err = io.ReadFull(f, fileHeader); err != nil {
@@ -81,7 +84,7 @@ func NewFromFile(name string) (d Decoder, err error) {
 // New creates a new Decoder that reads and decompresses data from the
 // given byte slice.
 func New(repData []byte) Decoder {
-	rf := repFormatUnknown
+	rf := RepFormatUnknown
 	if len(repData) >= 30 {
 		rf = detectRepFormat(repData[:30])
 	}
@@ -89,15 +92,15 @@ func New(repData []byte) Decoder {
 	return newDecoder(bytes.NewBuffer(repData), rf)
 }
 
-// repFormat identifies the replay format
-type repFormat int
+// RepFormat identifies the replay format
+type RepFormat int
 
 // Possible values of repFormat
 const (
-	repFormatUnknown   repFormat = iota // Unknown replay format
-	repFormatLegacy                     // Legacy replay format (pre 1.18)
-	repFormatModern                     // Modern replay format (1.18 - 1.20)
-	repFormatModern121                  // Modern 1.21 replay format (starting from 1.21)
+	RepFormatUnknown   RepFormat = iota // Unknown replay format
+	RepFormatLegacy                     // Legacy replay format (pre 1.18)
+	RepFormatModern                     // Modern replay format (1.18 - 1.20)
+	RepFormatModern121                  // Modern 1.21 replay format (starting from 1.21)
 )
 
 // detectRepFormat detects the replay format based on the file header
@@ -107,15 +110,15 @@ const (
 // data block of the Header section (which starts at offset 28).
 // If the compressed data block starts with the magic of the valid zlib header,
 // it is modern. If it is modern, the replay ID data decides which version.
-func detectRepFormat(fileHeader []byte) repFormat {
+func detectRepFormat(fileHeader []byte) RepFormat {
 	if len(fileHeader) < 30 {
-		return repFormatUnknown
+		return RepFormatUnknown
 	}
 
 	// legacy and pre 1.21 modern replays have replay ID data "reRS".
 	// Starting from 1.21, replay ID data is "seRS".
 	if fileHeader[12] == 's' {
-		return repFormatModern121
+		return RepFormatModern121
 	}
 
 	// It's pre 1.21, check if legacy:
@@ -127,16 +130,16 @@ func detectRepFormat(fileHeader []byte) repFormat {
 	//     0x9C level 6 (default compression?)
 	//     0xDA level 7..9
 	if fileHeader[28] != 0x78 {
-		return repFormatLegacy
+		return RepFormatLegacy
 	}
 
-	return repFormatModern
+	return RepFormatModern
 }
 
 // newDecoder creates a new Decoder that reads and decompresses data from the given Reader.
 // The source is treated as a modern replay if modern is true, else as a
 // legacy replay.
-func newDecoder(r io.Reader, rf repFormat) Decoder {
+func newDecoder(r io.Reader, rf RepFormat) Decoder {
 	dec := decoder{
 		r:        r,
 		rf:       rf,
@@ -145,7 +148,7 @@ func newDecoder(r io.Reader, rf repFormat) Decoder {
 	}
 
 	switch rf {
-	case repFormatModern, repFormatModern121:
+	case RepFormatModern, RepFormatModern121:
 		return &modernDecoder{
 			decoder: dec,
 		}
@@ -163,7 +166,7 @@ type decoder struct {
 	r io.Reader
 
 	// rf identifiers the rep format
-	rf repFormat
+	rf RepFormat
 
 	// sectionsCounter tells how many sections have been read
 	sectionsCounter int
@@ -173,6 +176,10 @@ type decoder struct {
 
 	// buf is a general buffer (re)used in decoding several sections
 	buf []byte
+}
+
+func (d *decoder) RepFormat() RepFormat {
+	return d.rf
 }
 
 // readInt32 reads an int32 from the underlying Reader.
@@ -191,11 +198,11 @@ func (d *decoder) NewSection() (err error) {
 	d.sectionsCounter++
 
 	switch d.rf {
-	case repFormatLegacy:
+	case RepFormatLegacy:
 		if d.sectionsCounter == 5 {
 			return ErrNoMoreSections // Legacy replays only have 4 sections
 		}
-	case repFormatModern121:
+	case RepFormatModern121:
 		// There is a 4-byte encoded length between sections:
 		if d.sectionsCounter == 2 {
 			if _, err = d.readInt32(); err != nil {

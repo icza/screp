@@ -1,5 +1,4 @@
 /*
-
 Package repparser implements StarCraft: Brood War replay parsing.
 
 The package is safe for concurrent use.
@@ -24,7 +23,6 @@ https://github.com/icza/bwhf/blob/master/src/hu/belicza/andras/bwhf/model/Action
 
 https://github.com/bwapi/bwapi/tree/master/bwapi/libReplayTool
 
-
 jssuh replay parser:
 
 https://github.com/neivv/jssuh
@@ -36,7 +34,6 @@ https://www.starcraftai.com/wiki/CHK_Format
 http://www.staredit.net/wiki/index.php/Scenario.chk
 
 http://blog.naver.com/PostView.nhn?blogId=wisdomswrap&logNo=60119755717&parentCategoryNo=&categoryNo=19&viewDate=&isShowPopularPosts=false&from=postView
-
 */
 package repparser
 
@@ -61,7 +58,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.8.2"
+	Version = "v1.8.3"
 )
 
 var (
@@ -240,6 +237,17 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 			if err = s.ParseFunc(data, r, cfg); err != nil {
 				return nil, fmt.Errorf("ParseFunc() error (sectionID: %d): %v", s.ID, err)
 			}
+			if s == SectionHeader {
+				// Fill Version:
+				switch dec.RepFormat() {
+				case repdecoder.RepFormatModern121:
+					r.Header.Version = "1.21+"
+				case repdecoder.RepFormatLegacy:
+					r.Header.Version = "-1.16"
+				case repdecoder.RepFormatModern:
+					r.Header.Version = "1.18-1.20"
+				}
+			}
 		}
 	}
 
@@ -249,7 +257,7 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 // repIDs is the possible valid content of the Replay ID section
 var repIDs = [][]byte{
 	[]byte("seRS"), // Starting from 1.21
-	[]byte("reRS"), // Up until 1.20. Abbreviation for replay ReSource?
+	[]byte("reRS"), // Up until 1.20.
 }
 
 // parseReplayID processes the replay ID data.
