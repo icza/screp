@@ -173,8 +173,9 @@ func (r *Replay) Compute() {
 //
 // Handles a special case: 1v1 game with observers.
 // Rules to detect this case:
-//   -there are only 2 human players on team 1, having train or build commands
-//   -all other players are on a different team, and they have no train nor build commands
+//
+//	-there are only 2 human players on team 1, having train or build commands
+//	-all other players are on a different team, and they have no train nor build commands
 //
 // If this case is detected, the players on team 1 are split into team 1 and 2,
 // and all players (observers) on the (original) team 2 are assiged to team 3, and marked as observers.
@@ -421,7 +422,7 @@ func (r *Replay) computeMeleeTeams() {
 func (r *Replay) computeWinners() {
 	// Situation: game result (winners / losers) is not recorded in replays.
 	// We try to determine the winners based on the "largest remaining team wins" principle.
-	// The essence of this is to procedd Leave game commands and track remaining team sizes.
+	// The essence of this is to process Leave game commands and track remaining team sizes.
 	// Problems:
 	//   -Leave game commands are not recorded for computers
 	//   -Leave game commands are not recorded for the replay saver
@@ -527,9 +528,9 @@ func (r *Replay) computeWinners() {
 // in the range of 1..12.
 //
 // Examples:
-//  - PI/2 => 12 (o'clock)
-//  - 0 => 3 (o'clock)
-//  - PI => 9 (o'clock)
+//   - PI/2 => 12 (o'clock)
+//   - 0 => 3 (o'clock)
+//   - PI => 9 (o'clock)
 func angleToClock(angle float64) int32 {
 	// The algorithm below computes clock value in the range of 0..11 where
 	// 0 corresponds to 12.
