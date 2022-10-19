@@ -34,7 +34,11 @@ and basic map data info (without tiles and resource location info):
 Or simply:
 
 	screp -map sample.rep
-	
+
+There is also a handy `-overview` flag which displays an overview / summary about the rep in human readable format (no JSON):
+
+	screp -overview sample.rep
+
 ## Installing the `screp` CLI app
 
 The easiest is to download the binary release prepared for your platform from the [Releases](https://github.com/icza/screp/releases) page. Extract the archive and start using `screp`.
