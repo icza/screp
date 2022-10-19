@@ -24,7 +24,7 @@ import (
 
 const (
 	appName    = "screp"
-	appVersion = "v1.7.3"
+	appVersion = "v1.8.0"
 	appAuthor  = "Andras Belicza"
 	appHome    = "https://github.com/icza/screp"
 )
@@ -42,6 +42,7 @@ const validMapDataHashes = "valid values are 'sha1', 'sha256', 'sha512', 'md5'"
 var (
 	version = flag.Bool("version", false, "print version info and exit")
 
+	overview    = flag.Bool("overview", false, "print replay overview in human-readable form (no JSON)\nother flags (except 'outFile') are ignored")
 	header      = flag.Bool("header", true, "print replay header")
 	mapData     = flag.Bool("map", false, "print map data")
 	mapTiles    = flag.Bool("maptiles", false, "print map data tiles; valid with 'map'")
@@ -120,6 +121,11 @@ func main() {
 		destination = foutput
 	}
 
+	if *overview {
+		printOverview(destination, r)
+		return
+	}
+
 	if *dumpMapData {
 		if _, err := destination.Write(r.MapData.Debug.Data); err != nil {
 			fmt.Printf("Failed to write map data: %v\n", err)
@@ -176,6 +182,46 @@ func main() {
 
 	if err := enc.Encode(valueToEncode); err != nil {
 		fmt.Printf("Failed to encode output: %v\n", err)
+	}
+}
+
+func printOverview(out *os.File, rep *rep.Replay) {
+	rep.Compute()
+
+	engine := rep.Header.Engine.ShortName
+	if rep.Header.Version != "" {
+		engine = engine + " " + rep.Header.Version
+	}
+	mapName := rep.MapData.Name
+	if mapName == "" {
+		mapName = rep.Header.Map // But revert to Header.Map if the latter is not available.
+	}
+	winner := ""
+	if rep.Computed.WinnerTeam != 0 {
+		winner = fmt.Sprint("Team ", rep.Computed.WinnerTeam)
+	}
+
+	fmt.Fprintln(out, "Engine  :", engine)
+	fmt.Fprintln(out, "Date    :", rep.Header.StartTime.Format("2006-01-02 15:04:05 -07:00"))
+	fmt.Fprintln(out, "Length  :", rep.Header.Frames.String())
+	fmt.Fprintln(out, "Title   :", rep.Header.Title)
+	fmt.Fprintln(out, "Map     :", mapName)
+	fmt.Fprintln(out, "Type    :", rep.Header.Type.Name)
+	fmt.Fprintln(out, "Matchup :", rep.Header.Matchup())
+	fmt.Fprintln(out, "Winner  :", winner)
+
+	fmt.Fprintln(out, "Team  R  APM EAPM   @  Name ")
+	for i, p := range rep.Header.Players {
+		pd := rep.Computed.PlayerDescs[i]
+		mins := pd.LastCmdFrame.Duration().Minutes()
+		var apm, eapm int
+		if pd.CmdCount > 0 {
+			apm = int(float64(pd.CmdCount)/mins + 0.5)
+		}
+		if pd.EffectiveCmdCount > 0 {
+			eapm = int(float64(pd.EffectiveCmdCount)/mins + 0.5)
+		}
+		fmt.Fprintf(out, "%3d   %s %4d %4d  %2d  %s\n", p.Team, p.Race.Name[:1], apm, eapm, pd.StartDirection, p.Name)
 	}
 }
 
