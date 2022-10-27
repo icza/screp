@@ -358,7 +358,7 @@ func parseHeader(data []byte, r *rep.Replay, cfg Config) error {
 	// Heuristic improvements: If 2 players only and their teams are the same, change teams to 1 and 2,
 	// and so matchup will be e.g. ZvT instead of ZT,
 	// and winner detection can also work (because teams will be different).
-	if (h.Type == repcore.GameTypeMelee || h.Type == repcore.GameType1v1) && len(h.OrigPlayers) == 2 &&
+	if (h.Type == repcore.GameTypeMelee || h.Type == repcore.GameType1on1) && len(h.OrigPlayers) == 2 &&
 		h.OrigPlayers[0].Team == h.OrigPlayers[1].Team {
 		h.OrigPlayers[0].Team = 1
 		h.OrigPlayers[1].Team = 2

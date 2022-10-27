@@ -118,7 +118,7 @@ var GameTypes = []*GameType{
 	{Enum{"Custom"}, 0x01, "Custom"}, // Warcraft III
 	{Enum{"Melee"}, 0x02, "Melee"},
 	{Enum{"Free For All"}, 0x03, "FFA"},
-	{Enum{"One on One"}, 0x04, "1v1"},
+	{Enum{"One on One"}, 0x04, "1on1"},
 	{Enum{"Capture The Flag"}, 0x05, "CTF"},
 	{Enum{"Greed"}, 0x06, "Greed"},
 	{Enum{"Slaughter"}, 0x07, "Slaughter"},
@@ -138,7 +138,7 @@ var (
 	GameTypeNone          = GameTypes[0]
 	GameTypeMelee         = GameTypes[2]
 	GameTypeFFA           = GameTypes[3]
-	GameType1v1           = GameTypes[4]
+	GameType1on1          = GameTypes[4]
 	GameTypeCTF           = GameTypes[5]
 	GameTypeGreed         = GameTypes[6]
 	GameTypeSlaughter     = GameTypes[7]
