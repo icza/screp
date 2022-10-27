@@ -3,11 +3,33 @@
 package repcmd
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
 	"github.com/icza/screp/rep/repcore"
 )
+
+// Bytes is a []byte that JSON-marshals itself as a number array.
+type Bytes []byte
+
+func (bs Bytes) MarshalJSON() ([]byte, error) {
+	if bs == nil {
+		return []byte("null"), nil
+	}
+
+	buf := bytes.NewBuffer(make([]byte, 0, len(bs)*3))
+	buf.WriteByte('[')
+	for i, v := range bs {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+		fmt.Fprint(buf, v)
+	}
+	buf.WriteByte(']')
+
+	return buf.Bytes(), nil
+}
 
 // e creates a new Enum value.
 func e(name string) repcore.Enum {
@@ -404,7 +426,7 @@ type VisionCmd struct {
 	*Base
 
 	// SlotIDs lists slot IDs the owner shared shared vision with
-	SlotIDs []byte
+	SlotIDs Bytes
 }
 
 // Params implements Cmd.Params().
@@ -423,7 +445,7 @@ type AllianceCmd struct {
 	*Base
 
 	// SlotIDs lists slot IDs the owner is allied to
-	SlotIDs []byte
+	SlotIDs Bytes
 
 	// AlliedVictory tells if Allied Victory is set.
 	AlliedVictory bool
