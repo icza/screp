@@ -22,8 +22,11 @@ import (
 )
 
 var (
-	// ErrMismatchedSection is returned if the section size is not the expected one
+	// ErrMismatchedSection is returned by Decoder.Section() if the section size is not the expected one
 	ErrMismatchedSection = errors.New("mismatched section")
+
+	// ErrNoMoreSections is returned by Decoder.NewSection() if there are no more sections.
+	ErrNoMoreSections = errors.New("no more sections")
 )
 
 // Decoder wraps a Section method for decoding a section of a given size.
@@ -191,8 +194,6 @@ func (d *decoder) readInt32() (n int32, err error) {
 	n = int32(binary.LittleEndian.Uint32(d.int32Buf))
 	return
 }
-
-var ErrNoMoreSections = errors.New("no more sections")
 
 func (d *decoder) NewSection() (err error) {
 	d.sectionsCounter++

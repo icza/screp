@@ -29,6 +29,7 @@ const (
 	appHome    = "https://github.com/icza/screp"
 )
 
+// Used exit codes
 const (
 	ExitCodeMissingArguments         = 1
 	ExitCodeFailedToParseReplay      = 2

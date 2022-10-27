@@ -13,6 +13,7 @@ import (
 // Bytes is a []byte that JSON-marshals itself as a number array.
 type Bytes []byte
 
+// MarshalJSON marshals the byte slice as a number array.
 func (bs Bytes) MarshalJSON() ([]byte, error) {
 	if bs == nil {
 		return []byte("null"), nil
