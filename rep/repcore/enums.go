@@ -20,9 +20,11 @@ func (e Enum) String() string {
 }
 
 // UnknownEnum constructs a new Enum for an unknown entity with a name:
-//     "Unknown 0xID"
+//
+//	"Unknown 0xID"
+//
 // ID must be an integer number.
-func UnknownEnum(ID interface{}) Enum {
+func UnknownEnum(ID any) Enum {
 	return Enum{fmt.Sprintf("Unknown 0x%x", ID)}
 }
 

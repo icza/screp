@@ -134,7 +134,7 @@ func main() {
 	}
 
 	// custom holds any custom data we want in the output and is not part of rep.Replay
-	custom := map[string]interface{}{}
+	custom := map[string]any{}
 
 	if *computed {
 		r.Compute()
@@ -170,13 +170,13 @@ func main() {
 		enc.SetIndent("", "  ")
 	}
 
-	var valueToEncode interface{} = r
+	var valueToEncode any = r
 
 	// If there are custom data, wrap (embed) the replay in a struct that holds the custom data too:
 	if len(custom) > 0 {
 		valueToEncode = struct {
 			*rep.Replay
-			Custom map[string]interface{}
+			Custom map[string]any
 		}{r, custom}
 	}
 
