@@ -136,6 +136,7 @@ var GameTypes = []*GameType{
 // Named valid game types
 var (
 	GameTypeNone          = GameTypes[0]
+	_                     = GameTypes[1] // GameTypeCustom
 	GameTypeMelee         = GameTypes[2]
 	GameTypeFFA           = GameTypes[3]
 	GameType1on1          = GameTypes[4]
@@ -148,6 +149,7 @@ var (
 	GameTypeTeamMelee     = GameTypes[11]
 	GameTypeTeamFFA       = GameTypes[12]
 	GameTypeTeamCTF       = GameTypes[13]
+	_                     = GameTypes[14] // GameTypeUnknown
 	GameTypeTvB           = GameTypes[15]
 	GameTypeIronManLadder = GameTypes[16]
 )
