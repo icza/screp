@@ -9,7 +9,7 @@ import (
 
 const (
 	// EAPMVersion is a Semver2 compatible version of the EAPM algorithm.
-	EAPMVersion = "v1.0.4"
+	EAPMVersion = "v1.0.5"
 )
 
 // IsCmdEffective tells if a command is considered effective so it can be included in EAPM calculation.
@@ -65,7 +65,7 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) repcore.IneffKind {
 	// (regardless of their destinations, if destinations are different/far, then the first one was useless)
 	if deltaFrame <= 10 && tid == prevTid {
 		switch tid {
-		case repcmd.TypeIDStop, repcmd.TypeIDHoldPosition:
+		case repcmd.TypeIDStop, repcmd.TypeIDHoldPosition, repcmd.VirtualTypeIDLand:
 			return repcore.IneffKindFastRepetition
 		case repcmd.TypeIDTargetedOrder, repcmd.TypeIDTargetedOrder121:
 			oid, prevOid := cmd.(*repcmd.TargetedOrderCmd).Order.ID, prevCmd.(*repcmd.TargetedOrderCmd).Order.ID

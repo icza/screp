@@ -235,6 +235,7 @@ const (
 	OrderIDCarrierHoldPosition  = 0x39
 	OrderIDReaverHoldPosition   = 0x3e
 	OrderIDReaverAttack         = 0x3b
+	OrderIDBuildingLand         = 0x47
 	OrderIDHoldPosition         = 0x6b
 	OrderIDQueenHoldPosition    = 0x6c
 	OrderIDUnload               = 0x6f

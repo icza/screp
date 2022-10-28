@@ -85,6 +85,11 @@ const (
 	TypeIDSelectRemove121    byte = 0x65
 )
 
+// Virtual Type IDs of command types
+const (
+	VirtualTypeIDLand byte = 0xfe // Recorded as TypeIDBuild but the meaning (and text) is fundamentally different
+)
+
 // Type describes the command type.
 type Type struct {
 	repcore.Enum
@@ -172,6 +177,8 @@ var Types = []*Type{
 	{e("Select"), TypeIDSelect121},
 	{e("Select Add"), TypeIDSelectAdd121},
 	{e("Select Remove"), TypeIDSelectRemove121},
+
+	{e("Land"), VirtualTypeIDLand},
 }
 
 // Named command types
@@ -253,6 +260,8 @@ var (
 	TypeSelect121          = Types[74]
 	TypeSelectAdd121       = Types[75]
 	TypeSelectRemove121    = Types[76]
+
+	TypeLand = Types[77]
 )
 
 // typeIDType maps from type ID to type.

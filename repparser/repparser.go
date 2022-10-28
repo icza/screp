@@ -459,7 +459,15 @@ func parseCommands(data []byte, r *rep.Replay, cfg Config) error {
 				buildCmd.Pos.X = sr.getUint16()
 				buildCmd.Pos.Y = sr.getUint16()
 				buildCmd.Unit = repcmd.UnitByID(sr.getUint16())
-				cmd = buildCmd
+				if buildCmd.Order.ID == repcmd.OrderIDBuildingLand {
+					// It's actually a Land command:
+					landCmd := (*repcmd.LandCmd)(buildCmd) // Fields are identical, we may simply convert it
+					landCmd.Base.Type = repcmd.TypeLand
+					cmd = landCmd
+				} else {
+					// It's truly a build command
+					cmd = buildCmd
+				}
 
 			case repcmd.TypeIDStop, repcmd.TypeIDBurrow, repcmd.TypeIDUnburrow,
 				repcmd.TypeIDReturnCargo, repcmd.TypeIDHoldPosition, repcmd.TypeIDUnloadAll,

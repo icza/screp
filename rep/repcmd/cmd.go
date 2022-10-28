@@ -522,6 +522,30 @@ func (loc *LiftOffCmd) Params(verbose bool) string {
 	)
 }
 
+// LandCmd describes a land command. Type: TypeBuild
+type LandCmd struct {
+	*Base
+
+	// Order type
+	Order *Order
+
+	// Pos tells the point where the building is landed.
+	Pos repcore.Point
+
+	// Unit is the building issued to be landed.
+	Unit *Unit
+}
+
+// Params implements Cmd.Params().
+func (bc *LandCmd) Params(verbose bool) string {
+	if verbose {
+		return fmt.Sprintf("Order: %v, Pos: (%v), Unit: %v", bc.Order, bc.Pos, bc.Unit)
+	}
+
+	// Order is "redundant" (it's always BuildingLand)
+	return fmt.Sprintf("(%v), %v", bc.Pos, bc.Unit)
+}
+
 // TechCmd describes a tech (research) command. Type: TypeTech
 type TechCmd struct {
 	*Base
