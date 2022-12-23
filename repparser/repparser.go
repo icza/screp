@@ -58,7 +58,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.8.5"
+	Version = "v1.9.0"
 )
 
 var (
@@ -82,6 +82,10 @@ type Config struct {
 	// Debug tells if debug and replay internal binaries is to be retained in the returned Replay.
 	Debug bool
 
+	// MapGraphics tells if map data usually required for map image rendering is to be parsed.
+	// MapData must be parsed too.
+	MapGraphics bool
+
 	_ struct{} // To prevent unkeyed literals
 }
 
@@ -93,6 +97,8 @@ func ParseFile(name string) (r *rep.Replay, err error) {
 // ParseFileSections parses an SC:BW replay file.
 // Parsing commands and map data sections depends on the given parameters.
 // Replay ID and header sections are always parsed.
+//
+// Deprecated: Use ParseFileConfig() instead.
 func ParseFileSections(name string, commands, mapData bool) (r *rep.Replay, err error) {
 	return ParseFileConfig(name, Config{Commands: commands, MapData: mapData})
 }
@@ -117,6 +123,8 @@ func Parse(repData []byte) (*rep.Replay, error) {
 // ParseSections parses an SC:BW replay from the given byte slice.
 // Parsing commands and map data sections depends on the given parameters.
 // Replay ID and header sections are always parsed.
+//
+// Deprecated: Use ParseConfig() instead.
 func ParseSections(repData []byte, commands, mapData bool) (*rep.Replay, error) {
 	return ParseConfig(repData, Config{Commands: commands, MapData: mapData})
 }
@@ -721,6 +729,9 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 	if cfg.Debug {
 		md.Debug = &rep.MapDataDebug{Data: data}
 	}
+	if cfg.MapGraphics {
+		md.MapGraphics = &rep.MapGraphics{}
+	}
 
 	var (
 		scenarioNameIdx        uint16 // String index
@@ -789,8 +800,8 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 			for i := uint32(0); i < maxI; i++ {
 				md.Tiles[i] = sr.getUint16()
 			}
-		case "UNIT": // Unit sub-section
-			for sr.pos < ssEndPos {
+		case "UNIT": // Placed units
+			for sr.pos+36 <= ssEndPos { // Loop until we have a complete unit
 				unitEndPos := sr.pos + 36 // 36 bytes for each unit
 
 				sr.pos += 4 // uint32 unit class instance ("serial number")
@@ -817,8 +828,48 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 					)
 				}
 
+				if cfg.MapGraphics {
+					md.MapGraphics.PlacedUnits = append(md.MapGraphics.PlacedUnits, &rep.PlacedUnit{
+						Point:          repcore.Point{X: x, Y: y},
+						UnitID:         unitID,
+						SlotID:         ownerID,
+						ResourceAmount: resAmount,
+					})
+				}
+
 				// Skip unprocessed unit data:
 				sr.pos = unitEndPos
+			}
+		case "THG2": // StarCraft Sprites
+			if cfg.MapGraphics {
+				for sr.pos+10 <= ssEndPos { // Loop until we have a complete sprite
+					spriteEndPos := sr.pos + 10 // 10 bytes for each unit
+
+					spriteID := sr.getUint16()
+					x := sr.getUint16()
+					y := sr.getUint16()
+					ownerID := sr.getByte() // 0-based SlotID
+					sr.pos++                // Unused
+					flags := sr.getUint16()
+					if flags&0x1000 == 0 {
+						// It's actually a unit
+						md.MapGraphics.PlacedUnits = append(md.MapGraphics.PlacedUnits, &rep.PlacedUnit{
+							Point:  repcore.Point{X: x, Y: y},
+							UnitID: spriteID,
+							SlotID: ownerID,
+							Sprite: true,
+						})
+					} else {
+						// It really is a sprite
+						md.MapGraphics.Sprites = append(md.MapGraphics.Sprites, &rep.Sprite{
+							Point:    repcore.Point{X: x, Y: y},
+							SpriteID: spriteID,
+						})
+					}
+
+					// Skip unprocessed unit data:
+					sr.pos = spriteEndPos
+				}
 			}
 		case "SPRP": // Scenario properties
 			// Strings section might be after this, so we just record the string indices for now:

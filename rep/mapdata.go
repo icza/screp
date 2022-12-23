@@ -43,6 +43,9 @@ type MapData struct {
 	// StartLocations on the map
 	StartLocations []StartLocation
 
+	// MapGraphics holds data for map image rendering.
+	MapGraphics *MapGraphics `json:",omitempty"`
+
 	// Debug holds optional debug info.
 	Debug *MapDataDebug `json:"-"`
 }
@@ -79,4 +82,38 @@ type StartLocation struct {
 type MapDataDebug struct {
 	// Data is the raw, uncompressed data of the section.
 	Data []byte
+}
+
+// MapGraphics holds info usually required only for map image rendering.
+type MapGraphics struct {
+	// PlacedUnits contains all placed units on the map.
+	// This also includes mineral fields, geysers, startlocations.
+	PlacedUnits []*PlacedUnit
+
+	// Sprites contains additional visual sprites on the map.
+	Sprites []*Sprite
+}
+
+type PlacedUnit struct {
+	repcore.Point
+
+	// UnitID is the unit id. This value is used in repcmd.Unit.UnitID.
+	UnitID uint16
+
+	// SlotID of the owner of this unit.
+	// Belongs to the Player with matching Player.SlotID
+	SlotID byte
+
+	// ResourceAmount of if it's a resource
+	ResourceAmount uint32 `json:",omitempty"`
+
+	// Sprite tells if this unit is a sprite.
+	Sprite bool `json:",omitempty"`
+}
+
+type Sprite struct {
+	repcore.Point
+
+	// SpriteID is the sprite id.
+	SpriteID uint16
 }
