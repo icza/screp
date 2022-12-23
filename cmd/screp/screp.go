@@ -24,7 +24,7 @@ import (
 
 const (
 	appName    = "screp"
-	appVersion = "v1.8.2"
+	appVersion = "v1.9.0"
 	appAuthor  = "Andras Belicza"
 	appHome    = "https://github.com/icza/screp"
 )
@@ -48,6 +48,7 @@ var (
 	mapData     = flag.Bool("map", false, "print map data")
 	mapTiles    = flag.Bool("maptiles", false, "print map data tiles; valid with 'map'")
 	mapResLoc   = flag.Bool("mapres", false, "print map data resource locations (minerals and geysers); valid with 'map'")
+	mapGfx      = flag.Bool("mapgfx", false, "print map graphics related data; valid with 'map'")
 	cmds        = flag.Bool("cmds", false, "print player commands")
 	computed    = flag.Bool("computed", true, "print computed / derived data")
 	mapDataHash = flag.String("mapDataHash", "", "calculate and print the hash of map data section too using the given algorithm;\n"+validMapDataHashes)
@@ -93,6 +94,10 @@ func main() {
 			fmt.Println(validMapDataHashes)
 			os.Exit(ExitCodeInvalidMapDataHash)
 		}
+	}
+
+	if *mapGfx {
+		cfg.MapGraphics = true
 	}
 
 	if *dumpMapData {

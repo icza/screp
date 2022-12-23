@@ -32,13 +32,13 @@ type MapData struct {
 
 	// Tiles is the tile data of the map (within the tile set): width x height elements.
 	// 1 Tile is 32 units (pixel)
-	Tiles []uint16
+	Tiles []uint16 `json:",omitempty"`
 
 	// Mineral field locations on the map
-	MineralFields []Resource
+	MineralFields []Resource `json:",omitempty"`
 
 	// Geyser locations on the map
-	Geysers []Resource
+	Geysers []Resource `json:",omitempty"`
 
 	// StartLocations on the map
 	StartLocations []StartLocation
