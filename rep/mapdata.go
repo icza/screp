@@ -87,7 +87,8 @@ type MapDataDebug struct {
 // MapGraphics holds info usually required only for map image rendering.
 type MapGraphics struct {
 	// PlacedUnits contains all placed units on the map.
-	// This also includes mineral fields, geysers, startlocations.
+	// This includes mineral fields, geysers and startlocations too.
+	// This also includes unit sprites.
 	PlacedUnits []*PlacedUnit
 
 	// Sprites contains additional visual sprites on the map.
