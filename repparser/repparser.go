@@ -801,7 +801,7 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 				md.Tiles[i] = sr.getUint16()
 			}
 		case "UNIT": // Placed units
-			for sr.pos+36 <= ssEndPos { // Loop until we have a complete unit
+			for sr.pos+36 <= ssEndPos { // Loop while we have a complete unit
 				unitEndPos := sr.pos + 36 // 36 bytes for each unit
 
 				sr.pos += 4 // uint32 unit class instance ("serial number")
@@ -842,8 +842,8 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 			}
 		case "THG2": // StarCraft Sprites
 			if cfg.MapGraphics {
-				for sr.pos+10 <= ssEndPos { // Loop until we have a complete sprite
-					spriteEndPos := sr.pos + 10 // 10 bytes for each unit
+				for sr.pos+10 <= ssEndPos { // Loop while we have a complete sprite
+					spriteEndPos := sr.pos + 10 // 10 bytes for each sprite
 
 					spriteID := sr.getUint16()
 					x := sr.getUint16()
@@ -867,7 +867,7 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 						})
 					}
 
-					// Skip unprocessed unit data:
+					// Skip unprocessed sprite data:
 					sr.pos = spriteEndPos
 				}
 			}
