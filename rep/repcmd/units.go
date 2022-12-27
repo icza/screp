@@ -254,6 +254,14 @@ func init() {
 
 // Unit IDs
 const (
+	// Critters
+	UnitIDRhynadon  = 0x59
+	UnitIDBengalaas = 0x5a
+	UnitIDScantid   = 0x5d
+	UnitIDKakaru    = 0x5e
+	UnitIDRagnasaur = 0x5f
+	UnitIDUrsadon   = 0x60
+
 	UnitIDCommandCenter   = 0x6A
 	UnitIDComSat          = 0x6B
 	UnitIDNuclearSilo     = 0x6C

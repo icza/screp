@@ -34,6 +34,8 @@ https://www.starcraftai.com/wiki/CHK_Format
 http://www.staredit.net/wiki/index.php/Scenario.chk
 
 http://blog.naver.com/PostView.nhn?blogId=wisdomswrap&logNo=60119755717&parentCategoryNo=&categoryNo=19&viewDate=&isShowPopularPosts=false&from=postView
+
+https://github.com/ShieldBattery/bw-chk/blob/master/index.js
 */
 package repparser
 
