@@ -118,6 +118,7 @@ func ParseFileConfig(name string, cfg Config) (r *rep.Replay, err error) {
 }
 
 // Parse parses all sections of an SC:BW replay from the given byte slice.
+// Map graphics related info is not parsed (see Config.MapGraphics).
 func Parse(repData []byte) (*rep.Replay, error) {
 	return ParseConfig(repData, Config{Commands: true, MapData: true})
 }
