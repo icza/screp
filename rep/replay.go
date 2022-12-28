@@ -213,13 +213,14 @@ func (r *Replay) computeUMSTeams() {
 	playerTrainBuildCount := 0
 	noObsCandidates := len(obsCandidateIDs) == 0
 
+cmdLoop:
 	for _, cmd := range r.Commands.Cmds {
 		switch cmd.(type) {
 		case *repcmd.TrainCmd, *repcmd.BuildCmd:
 			if playerCandidateIDs[cmd.BaseCmd().PlayerID] {
 				playerTrainBuildCount++
 				if noObsCandidates {
-					break // We got what we want, no obs candidates, no need to continue
+					break cmdLoop // We got what we want, no obs candidates, no need to continue
 				}
 			} else if obsCandidateIDs[cmd.BaseCmd().PlayerID] {
 				return // An obs candidate have a train or build command, this is not the special case we're looking for
