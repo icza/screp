@@ -279,7 +279,7 @@ func (r *Replay) computeUMSTeamsAI() {
 	// Check if player candidates have train or build commands, and obs candidates don't.
 	playerTrainBuildCount := 0
 	team1Slots := map[byte]bool{}
-cmdLoopAI:
+	// cmdLoopAI:
 	for _, cmd := range r.Commands.Cmds {
 		switch cmdx := cmd.(type) {
 		case *repcmd.TrainCmd, *repcmd.BuildCmd:
@@ -287,10 +287,26 @@ cmdLoopAI:
 			playerCandidateIDs[cmdx.BaseCmd().PlayerID] = true
 		case *repcmd.AllianceCmd:
 			// allianceCmd, _ := cmd.(*repcmd.AllianceCmd)
-			for _, slotId := range cmdx.SlotIDs {
-				team1Slots[slotId] = true
+			if len(team1Slots) == 0 {
+				for _, slotId := range cmdx.SlotIDs {
+					team1Slots[slotId] = true
+				}
+			} else {
+				isTeam1 := false
+				for _, slotId := range cmdx.SlotIDs {
+					if _, ok := team1Slots[slotId]; ok {
+						isTeam1 = true
+						break
+					}
+				}
+				if isTeam1 {
+					for _, slotId := range cmdx.SlotIDs {
+						team1Slots[slotId] = true
+					}
+				}
 			}
-			break cmdLoopAI
+			// break cmdLoopAI
+			// fmt.Println(cmdx)
 		}
 	}
 
