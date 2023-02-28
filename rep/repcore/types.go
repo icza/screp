@@ -51,7 +51,8 @@ type Point struct {
 }
 
 // String returns a string representation of the point in the format:
-//     "x=X, y=Y"
+//
+//	"x=X, y=Y"
 func (p Point) String() string {
 	return fmt.Sprint("x=", p.X, ", y=", p.Y)
 }

@@ -141,6 +141,8 @@ func (r *Replay) Compute() {
 		switch r.Header.Type {
 		case repcore.GameTypeUMS:
 			if strings.Contains(strings.ToLower(r.MapData.Name), "[ai]") {
+				// only matching map names contains "[AI]"
+				// Can be changed to include other map names
 				r.computeUMSTeamsAI()
 			} else {
 				r.computeUMSTeams()
@@ -250,6 +252,14 @@ cmdLoop:
 	}
 }
 
+// computeUMSTeams computes the teams in UMS AI games.
+//
+// It checks alliance cmd in the first 90 sec to split the teams
+// It only handles 2v2, 3v3, 4v4 games
+// It will not handle:
+// number of players < 4
+// number of players is an odd number
+// players become observers by manul alliance
 func (r *Replay) computeUMSTeamsAI() {
 	// We'll have to check player commands later, so if it's not parsed, don't waste any time:
 	if r.Commands == nil {
@@ -257,32 +267,26 @@ func (r *Replay) computeUMSTeamsAI() {
 	}
 
 	players := r.Header.Players
-	if len(players) < 2 {
+	// if not enough players or number of players is not even
+	if len(players) < 4 || len(players)%2 != 0 {
 		return
 	}
 
+	// Stop after ~90 seconds
+	frameLimit := repcore.Duration2Frame(90 * time.Second)
+	var frameIndex repcore.Frame
+
 	playerCandidateIDs := map[byte]bool{}
-	slotIDToPlayerID := map[byte]byte{}
-
-	for _, p := range players {
-		if p.Type != repcore.PlayerTypeHuman {
-			return // Non-human involved, don't get involved!
-		}
-		if p.Team == 1 { // players
-			playerCandidateIDs[p.ID] = false
-			slotIDToPlayerID[byte(p.SlotID)] = p.ID
-		} else { // observers
-			players[p.ID].Team = 3
-		}
-	}
-
-	// Check if player candidates have train or build commands, and obs candidates don't.
-	playerTrainBuildCount := 0
 	team1Slots := map[byte]bool{}
+
 	for _, cmd := range r.Commands.Cmds {
+		frameIndex = cmd.BaseCmd().Frame
+		if cmd.BaseCmd().Frame > frameLimit {
+			break
+		}
 		switch cmdx := cmd.(type) {
 		case *repcmd.TrainCmd, *repcmd.BuildCmd:
-			playerTrainBuildCount++
+			// Check if player candidates have train or build commands
 			playerCandidateIDs[cmdx.BaseCmd().PlayerID] = true
 		case *repcmd.AllianceCmd:
 			if len(team1Slots) == 0 {
@@ -305,27 +309,22 @@ func (r *Replay) computeUMSTeamsAI() {
 			}
 		}
 	}
-
-	if playerTrainBuildCount == 0 {
-		return // Player candidates have no train nor build commands, this is not the special case we're looking for
+	if frameIndex < frameLimit { // Invalid game if < 90 sec
+		return
+	}
+	if len(players) != len(playerCandidateIDs) {
+		return // Some player candidates have no train nor build commands
 	}
 	if len(team1Slots) == 0 { // when no allianceCmd found
-		for s, _ := range slotIDToPlayerID {
-			team1Slots[s] = true
-			break
-		}
+		return
 	}
+
 	// teams
 	for _, p := range players {
-		if isPlayer, ok := playerCandidateIDs[p.ID]; ok && isPlayer {
-			if _, ok := team1Slots[byte(p.SlotID)]; ok {
-				p.Team = 1
-			} else {
-				p.Team = 2
-			}
+		if _, ok := team1Slots[byte(p.SlotID)]; ok {
+			p.Team = 1
 		} else {
-			p.Team = 3
-			p.Observer = true
+			p.Team = 2
 		}
 	}
 }
