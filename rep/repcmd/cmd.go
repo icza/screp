@@ -445,7 +445,8 @@ func (vc *VisionCmd) Params(verbose bool) string {
 type AllianceCmd struct {
 	*Base
 
-	// SlotIDs lists slot IDs the owner is allied to
+	// SlotIDs lists slot IDs the owner is allied to.
+	// It contains slot IDs in increasing order.
 	SlotIDs Bytes
 
 	// AlliedVictory tells if Allied Victory is set.

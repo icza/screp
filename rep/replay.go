@@ -4,6 +4,8 @@
 package rep
 
 import (
+	"bytes"
+	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -147,13 +149,14 @@ func (r *Replay) Compute() {
 			mapName = strings.ToLower(mapName)
 			// "[ai]" maps are special, we can do better than in general:
 			switch {
-			case strings.Contains(mapName, "[ai]"):
+			case strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "bgh random teams"):
+				r.detectObservers(pidBuilds, obsProfileUMSAI)
 				r.computeUMSTeamsAI()
 			default:
 				r.computeUMSTeams()
 			}
 		case repcore.GameTypeMelee:
-			r.detectMeleeObservers(pidBuilds)
+			r.detectObservers(pidBuilds, obsProfileMelee)
 			r.computeMeleeTeams()
 		}
 
@@ -257,14 +260,25 @@ cmdLoop:
 	}
 }
 
-// computeUMSTeams computes the teams in UMS AI games.
+// computeUMSTeamsAI computes the teams in UMS AI games.
 //
-// It checks alliance cmd in the first 90 sec to split the teams
-// It only handles 2v2, 3v3, 4v4 games
-// It will not handle:
-// number of players < 4
-// number of players is an odd number
-// players become observers by manul alliance
+// Maps having "[AI]" in their name are special: they create random teams after start,
+// with optional observers. Random team arragement usually happens 18 seconds after game start.
+// Commands selecting teams are not recorded, but since teams are created randomly, players very often check alliance
+// to see who their allies are. This reasults in Alliance commands recording the team setup at the time
+// of the checks. We will use these to detect teams.
+// There is no guarantee players check alliance and they may also change the (initial) alliance arranged by the map.
+//
+// Different AI maps handle observers differently.
+// Some set alliance from players to observers too (observers will be in team 1 and team 2 too), and observers are allied with each other only.
+// Other AI maps set alliance only between team members and observers separately.
+// Observers may also be allied with all players / slots.
+//
+// Alliance commands in the first 90 seconds are checked; if they consistently denote 2 teams (and an optional observer team),
+// players are assigned team 1 and 2 respectively (and observers are assigned team 3, and marked as observers).
+//
+// If teams can be computed, also rearranges Header.Players and Computed.PlayerDescs
+// according to new teams.
 func (r *Replay) computeUMSTeamsAI() {
 	// We'll have to check player commands later, so if it's not parsed, don't waste any time:
 	if r.Commands == nil {
@@ -272,80 +286,155 @@ func (r *Replay) computeUMSTeamsAI() {
 	}
 
 	players := r.Header.Players
-	// if not enough players or number of players is not even
-	if len(players) < 4 || len(players)%2 != 0 {
+	if len(players) < 2 {
 		return
 	}
 
-	// Stop after ~90 seconds
-	frameLimit := repcore.Duration2Frame(90 * time.Second)
-	var frameIndex repcore.Frame
-
-	playerCandidateIDs := map[byte]bool{}
-	team1Slots := map[byte]bool{}
-
-	for _, cmd := range r.Commands.Cmds {
-		frameIndex = cmd.BaseCmd().Frame
-		if cmd.BaseCmd().Frame > frameLimit {
-			break
+	// Only compute if we don't yet have team info (if all teams are the same):
+	var nonObsPlayer *Player
+	for _, p := range players {
+		if p.Observer {
+			continue
 		}
-		switch cmdx := cmd.(type) {
-		case *repcmd.TrainCmd, *repcmd.BuildCmd:
-			// Check if player candidates have train or build commands
-			playerCandidateIDs[cmdx.BaseCmd().PlayerID] = true
-		case *repcmd.AllianceCmd:
-			if len(team1Slots) == 0 {
-				for _, slotId := range cmdx.SlotIDs {
-					team1Slots[slotId] = true
-				}
-			} else {
-				isTeam1 := false
-				for _, slotId := range cmdx.SlotIDs {
-					if _, ok := team1Slots[slotId]; ok {
-						isTeam1 = true
-						break
-					}
-				}
-				if isTeam1 {
-					for _, slotId := range cmdx.SlotIDs {
-						team1Slots[slotId] = true
-					}
-				}
+		if nonObsPlayer == nil {
+			nonObsPlayer = p
+		} else {
+			if p.Team != nonObsPlayer.Team {
+				return
 			}
 		}
 	}
-	if frameIndex < frameLimit { // Invalid game if < 90 sec
-		return
-	}
-	if len(players) != len(playerCandidateIDs) {
-		return // Some player candidates have no train nor build commands
-	}
-	if len(team1Slots) == 0 { // when no allianceCmd found
-		return
-	}
 
-	// teams
+	// Set of slotIDs belonging to players (non-observers):
+	playerSlotIDs := map[byte]bool{}
 	for _, p := range players {
-		if _, ok := team1Slots[byte(p.SlotID)]; ok {
-			p.Team = 1
-		} else {
-			p.Team = 2
+		if !p.Observer {
+			playerSlotIDs[byte(p.SlotID)] = true
 		}
 	}
+	filterOutObserverSlotIDs := func(slotIDs []byte) (result []byte) {
+		for _, slotID := range slotIDs {
+			if playerSlotIDs[slotID] {
+				result = append(result, slotID)
+			}
+		}
+		return
+	}
+
+	// Slot IDs of player's last Alliance commands, observers filtered out:
+	pidSlotIDs := map[byte][]byte{}
+
+	// Stop after ~90 seconds: use the "initial" teams
+	frameMaxLimit := repcore.Duration2Frame(90 * time.Second)
+	frameMinLimit := repcore.Duration2Frame(18 * time.Second)
+	for _, cmd := range r.Commands.Cmds {
+		if cmd.BaseCmd().Frame > frameMaxLimit {
+			break
+		}
+		if ac, ok := cmd.(*repcmd.AllianceCmd); ok {
+			if p := r.Header.PIDPlayers[ac.PlayerID]; p != nil && p.Observer {
+				continue
+			}
+			filteredSlotIDs := filterOutObserverSlotIDs(ac.SlotIDs) // Note: first filter as in BGH Random teams this also includes the obs computer!
+			if len(filteredSlotIDs) == 1 && cmd.BaseCmd().Frame < frameMinLimit {
+				continue // Random team arrangement has likely not done, do not count!
+			}
+			pidSlotIDs[ac.PlayerID] = filteredSlotIDs
+		}
+	}
+
+	// Since observers are filtered out, there should be exactly 2 teams, with equal size,
+	// disjunct players. And all other players must be observers.
+
+	// We use the string representation of the slots as the virtual team ID
+	// which will be something like "[0 2 3]"
+	virtualTeamIDSlotIDs := map[string][]byte{}
+	for _, slotIDs := range pidSlotIDs {
+		if len(slotIDs) == 0 {
+			continue
+		}
+		virtualID := fmt.Sprint(slotIDs)
+		virtualTeamIDSlotIDs[virtualID] = slotIDs
+	}
+	if len(virtualTeamIDSlotIDs) != 2 {
+		fmt.Println("ICZA", virtualTeamIDSlotIDs)
+		return // not 2 teams exactly
+	}
+
+	var team1SlotIDs, team2SlotIDs []byte
+	for _, slotIDs := range virtualTeamIDSlotIDs {
+		if team1SlotIDs == nil {
+			team1SlotIDs = slotIDs
+		} else {
+			team2SlotIDs = slotIDs
+		}
+	}
+	// Use consistent team order (order by first slot ID):
+	if team2SlotIDs[0] < team1SlotIDs[0] {
+		team1SlotIDs, team2SlotIDs = team2SlotIDs, team1SlotIDs
+	}
+	// Check if teams are disjuct:
+	for _, slotIDA := range team1SlotIDs {
+		if bytes.IndexByte(team2SlotIDs, slotIDA) >= 0 {
+			return // slotIDA is in both teams
+		}
+	}
+	// Check if all non-observers are in one of the 2 teams:
+	slotIDTeams := map[byte]byte{}
+	for _, slotID := range team1SlotIDs {
+		slotIDTeams[slotID] = 1
+	}
+	for _, slotID := range team2SlotIDs {
+		slotIDTeams[slotID] = 2
+	}
+	if len(playerSlotIDs) != len(slotIDTeams) {
+		return // Not all player assigned to team 1 or 2
+	}
+
+	// Assign new teams
+	for _, p := range players {
+		if p.Observer {
+			p.Team = 3
+		} else {
+			p.Team = slotIDTeams[byte(p.SlotID)]
+		}
+	}
+
+	// Re-sort Header.Players and Computed.PlayerDescs
+	r.rearrangePlayers()
 }
 
-// detectMeleeObservers detects observers in Melee games.
-func (r *Replay) detectMeleeObservers(pidBuilds map[byte]int) {
+// obsProfile holds data for observer rules in different scenarios.
+type obsProfile struct {
+	apmLimit        int32
+	buildCmdsLimit  int
+	earlyLeaveFrame repcore.Frame // consider early leaver observer
+	computer        bool          // Classify computer as observer (BGH Random Teams map)
+}
+
+var (
+	obsProfileMelee = &obsProfile{apmLimit: 25, buildCmdsLimit: 5}
+	obsProfileUMSAI = &obsProfile{apmLimit: 40, buildCmdsLimit: 2, earlyLeaveFrame: repcore.Duration2Frame(18 * time.Second), computer: true}
+)
+
+// detectObservers detects observers based on the given obs profile.
+func (r *Replay) detectObservers(pidBuilds map[byte]int, obsProf *obsProfile) {
 	c := r.Computed
 
 	// Criteria for observers:
 	//   - Human
-	//   - APM < 25
-	//   - Has less than 5 build commands
+	//       and
+	//         - APM < obsProf.apmLimit
+	//         - Has less than obsProf.buildCmdsLimit build commands
+	//       or
+	//         - obsProf.earlyLeaveFrame is not zero and the player left earlier
 
 	numObs := 0
 	for i, p := range r.Header.Players {
-		if p.Type == repcore.PlayerTypeHuman && c.PlayerDescs[i].APM < 25 && pidBuilds[p.ID] < 5 {
+		if p.Type == repcore.PlayerTypeHuman &&
+			(c.PlayerDescs[i].APM < obsProf.apmLimit && pidBuilds[p.ID] < obsProf.buildCmdsLimit ||
+				obsProf.earlyLeaveFrame > 0 && c.PlayerDescs[i].LastCmdFrame < obsProf.earlyLeaveFrame) ||
+			(obsProf.computer && p.Type == repcore.PlayerTypeComputer) {
 			p.Observer = true
 			numObs++
 		}
@@ -364,13 +453,15 @@ func (r *Replay) detectMeleeObservers(pidBuilds map[byte]int) {
 // If teams can be computed, also rearranges Header.Players and Computed.PlayerDescs
 // according to new teams.
 func (r *Replay) computeMeleeTeams() {
+	// We'll have to check player commands later, so if it's not parsed, don't waste any time:
+	if r.Commands == nil {
+		return
+	}
+
 	players := r.Header.Players
 	if len(players) < 2 {
 		return
 	}
-
-	c := r.Computed
-	pds := c.PlayerDescs
 
 	// Only compute if we don't yet have team info (if all teams are the same):
 	var nonObsPlayer *Player
@@ -448,7 +539,6 @@ func (r *Replay) computeMeleeTeams() {
 			for _, slotIDC := range slotIDSlotIDs[slotIDB] {
 				if slotIDC == slotIDA {
 					// found!
-					found = true
 					break
 				}
 			}
@@ -491,17 +581,31 @@ func (r *Replay) computeMeleeTeams() {
 	}
 
 	// Re-sort Header.Players and Computed.PlayerDescs
+	r.rearrangePlayers()
+}
+
+// rearrangePlayers rearranges Header.Players and Computed.PlayerDescs to be in "team order".
+// Teams may be assigned / changed by team detection algorithms, this helper function
+// rearranges the players so the order will be in team-order.
+func (r *Replay) rearrangePlayers() {
+	players := r.Header.Players
+	pds := r.Computed.PlayerDescs
+
+	// Re-sort Header.Players and Computed.PlayerDescs
 	type wrapper struct {
 		p  *Player
 		pd *PlayerDesc
 	}
+
 	ws := make([]wrapper, len(players))
 	for i, p := range players {
 		ws[i] = wrapper{p: p, pd: pds[i]}
 	}
+
 	sort.SliceStable(ws, func(i, j int) bool {
 		return ws[i].p.Team < ws[j].p.Team
 	})
+
 	for i := range ws {
 		players[i] = ws[i].p
 		pds[i] = ws[i].pd
