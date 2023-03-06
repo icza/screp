@@ -335,7 +335,7 @@ func (r *Replay) computeUMSTeamsAI() {
 			if p := r.Header.PIDPlayers[ac.PlayerID]; p != nil && p.Observer {
 				continue
 			}
-			filteredSlotIDs := filterOutObserverSlotIDs(ac.SlotIDs) // Note: first filter as in BGH Random teams this also includes the obs computer!
+			filteredSlotIDs := filterOutObserverSlotIDs(ac.SlotIDs) // Note: first filter as on "BGH Random Teams" this also includes the obs computer!
 			if len(filteredSlotIDs) == 1 && cmd.BaseCmd().Frame < frameMinLimit {
 				continue // Random team arrangement has likely not done, do not count!
 			}
@@ -357,7 +357,6 @@ func (r *Replay) computeUMSTeamsAI() {
 		virtualTeamIDSlotIDs[virtualID] = slotIDs
 	}
 	if len(virtualTeamIDSlotIDs) != 2 {
-		fmt.Println("ICZA", virtualTeamIDSlotIDs)
 		return // not 2 teams exactly
 	}
 
@@ -406,9 +405,9 @@ func (r *Replay) computeUMSTeamsAI() {
 
 // obsProfile holds data for observer rules in different scenarios.
 type obsProfile struct {
-	apmLimit        int32
-	buildCmdsLimit  int
-	earlyLeaveFrame repcore.Frame // consider early leaver observer
+	apmLimit        int32         // Human obs must be below this APM limit
+	buildCmdsLimit  int           // Human obs must be below this build command limit
+	earlyLeaveFrame repcore.Frame // consider early leavers as observer
 	computer        bool          // Classify computer as observer (BGH Random Teams map)
 }
 
