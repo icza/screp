@@ -140,11 +140,16 @@ func (r *Replay) Compute() {
 
 		switch r.Header.Type {
 		case repcore.GameTypeUMS:
-			if strings.Contains(strings.ToLower(r.MapData.Name), "[ai]") {
-				// only matching map names contains "[AI]"
-				// Can be changed to include other map names
+			mapName := r.Header.Map
+			if r.MapData != nil {
+				mapName = r.MapData.Name
+			}
+			mapName = strings.ToLower(mapName)
+			// "[ai]" maps are special, we can do better than in general:
+			switch {
+			case strings.Contains(mapName, "[ai]"):
 				r.computeUMSTeamsAI()
-			} else {
+			default:
 				r.computeUMSTeams()
 			}
 		case repcore.GameTypeMelee:
