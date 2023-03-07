@@ -324,6 +324,16 @@ func (r *Replay) computeUMSTeamsAI() {
 	// Slot IDs of player's last Alliance commands, observers filtered out:
 	pidSlotIDs := map[byte][]byte{}
 
+	// If there are 2 players only, it's unlikely they'll check alliances and thus below team detection would fail.
+	// To make it still work, initialize with self-alliance:
+	if len(playerSlotIDs) == 2 {
+		for _, p := range players {
+			if !p.Observer {
+				pidSlotIDs[p.ID] = []byte{byte(p.SlotID)}
+			}
+		}
+	}
+
 	// Stop after ~90 seconds: use the "initial" teams
 	frameMaxLimit := repcore.Duration2Frame(90 * time.Second)
 	frameMinLimit := repcore.Duration2Frame(18 * time.Second)
