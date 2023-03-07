@@ -334,8 +334,8 @@ func (r *Replay) computeUMSTeamsAI() {
 		}
 	}
 
-	// Stop after ~90 seconds: use the "initial" teams
-	frameMaxLimit := repcore.Duration2Frame(90 * time.Second)
+	// Stop after ~115 seconds: use the "initial" teams
+	frameMaxLimit := repcore.Duration2Frame(115 * time.Second)
 	frameMinLimit := repcore.Duration2Frame(18 * time.Second)
 	for _, cmd := range r.Commands.Cmds {
 		if cmd.BaseCmd().Frame > frameMaxLimit {
@@ -345,7 +345,7 @@ func (r *Replay) computeUMSTeamsAI() {
 			if p := r.Header.PIDPlayers[ac.PlayerID]; p != nil && p.Observer {
 				continue
 			}
-			filteredSlotIDs := filterOutObserverSlotIDs(ac.SlotIDs) // Note: first filter as on "BGH Random Teams" this also includes the obs computer!
+			filteredSlotIDs := filterOutObserverSlotIDs(ac.SlotIDs) // Note: first filter because on "BGH Random Teams" this also includes the obs computer!
 			if len(filteredSlotIDs) == 1 && cmd.BaseCmd().Frame < frameMinLimit {
 				continue // Random team arrangement has likely not done, do not count!
 			}
