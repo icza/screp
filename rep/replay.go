@@ -274,7 +274,7 @@ cmdLoop:
 // Other AI maps set alliance only between team members and observers separately.
 // Observers may also be allied with all players / slots.
 //
-// Alliance commands in the first 90 seconds are checked; if they consistently denote 2 teams (and an optional observer team),
+// Alliance commands in the first 115 seconds are checked; if they consistently denote 2 teams (and an optional observer team),
 // players are assigned team 1 and 2 respectively (and observers are assigned team 3, and marked as observers).
 //
 // If teams can be computed, also rearranges Header.Players and Computed.PlayerDescs
