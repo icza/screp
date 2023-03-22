@@ -17,15 +17,34 @@ type modernDecoder struct {
 	decoder
 }
 
-func (d *modernDecoder) Section(size int32) (result []byte, err error) {
+var knownModernSectionIDSizeHints = map[int32]int32{
+	1313426259: 0x15e0, // "SKIN"
+	1398033740: 0x1c,   // "LMTS"
+	1481197122: 0x08,   // "BFIX"
+	1380729667: 0xc0,   // "CCLR"
+	1195787079: 0x19,   // "GCFG"
+}
+
+func (d *modernDecoder) Section(size int32) (result []byte, sectionID int32, err error) {
 	if d.sectionsCounter > 5 {
 		// These are the sections added in modern replays.
-		if _, err = d.readInt32(); err != nil { // This is the StrID of the section, not checking it
+		if sectionID, err = d.readInt32(); err != nil { // This is the StrID of the section, not checking it
 			return
 		}
-		if _, err = d.readInt32(); err != nil {
+		var rawSize int32
+		if rawSize, err = d.readInt32(); err != nil { // raw, remaining section size
 			return
 		}
+
+		sizeHint := knownModernSectionIDSizeHints[sectionID]
+		if sizeHint == 0 {
+			// It's not a known, SCR section, but some custom section.
+			// Don't assume anything about its format, return the raw data:
+			result = make([]byte, rawSize)
+			_, err = io.ReadFull(d.r, result)
+			return
+		}
+		size = sizeHint
 	}
 
 	var count int32
@@ -48,7 +67,7 @@ func (d *modernDecoder) Section(size int32) (result []byte, err error) {
 		}
 		compressed := d.buf[:length]
 		if _, err = io.ReadFull(d.r, compressed); err != nil {
-			return nil, err
+			return nil, sectionID, err
 		}
 		if length > 4 && compressed[0] == 0x78 { // Is it compressed? (0x78 zlib magic)
 			if resetter, ok := zr.(zlib.Resetter); ok {
@@ -58,10 +77,10 @@ func (d *modernDecoder) Section(size int32) (result []byte, err error) {
 				defer zr.Close()
 			}
 			if err != nil {
-				return nil, err
+				return nil, sectionID, err
 			}
 			if _, err = io.Copy(resBuf, zr); err != nil {
-				return nil, err
+				return nil, sectionID, err
 			}
 		} else {
 			// it's not compressed
@@ -71,5 +90,5 @@ func (d *modernDecoder) Section(size int32) (result []byte, err error) {
 		}
 	}
 
-	return resBuf.Bytes(), nil
+	return resBuf.Bytes(), sectionID, nil
 }

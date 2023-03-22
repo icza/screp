@@ -60,7 +60,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.10.0"
+	Version = "v1.11.0"
 )
 
 var (
@@ -183,23 +183,28 @@ var Sections = []*Section{
 	{ID: 2, Size: 0, ParseFunc: parseCommands},
 	{ID: 3, Size: 0, ParseFunc: parseMapData},
 	{ID: 4, Size: 0x300, ParseFunc: parsePlayerNames},
-	{ID: 5, Size: 0x100, ParseFunc: parseSkin, StrID: "SKIN"},
-	{ID: 6, Size: 0x1c, ParseFunc: parseLmts, StrID: "LMTS"},
-	{ID: 7, Size: 0x08, ParseFunc: parseBfix, StrID: "BFIX"},
-	{ID: 8, Size: 0x80, ParseFunc: parsePlayerColors, StrID: "CCLR"},
+}
+
+// ModernSections holds custom sections added in Remastered, and also custom sections
+// added by 3rd party vendors.
+var ModernSections = map[int32]*Section{
+	1313426259: {ID: 5, Size: 0x15e0, ParseFunc: parseSkin, StrID: "SKIN"},
+	1398033740: {ID: 6, Size: 0x1c, ParseFunc: parseLmts, StrID: "LMTS"},
+	1481197122: {ID: 7, Size: 0x08, ParseFunc: parseBfix, StrID: "BFIX"},
+	1380729667: {ID: 8, Size: 0xc0, ParseFunc: parsePlayerColors, StrID: "CCLR"},
+	1195787079: {ID: 9, Size: 0x19, ParseFunc: parseGcfg, StrID: "GCFG"},
+
+	// ShieldBattery's custom section
+	1952539219: {ID: 10, Size: 0, ParseFunc: parseShieldBatterySection, StrID: "Sbat"},
 }
 
 // Named sections
 var (
-	SectionReplayID     = Sections[0]
-	SectionHeader       = Sections[1]
-	SectionCommands     = Sections[2]
-	SectionMapData      = Sections[3]
-	SectionPlayerNames  = Sections[4]
-	SectionSkin         = Sections[5]
-	SectionLmts         = Sections[6]
-	SectionBfix         = Sections[7]
-	SectionPlayerColors = Sections[8]
+	SectionReplayID    = Sections[0]
+	SectionHeader      = Sections[1]
+	SectionCommands    = Sections[2]
+	SectionMapData     = Sections[3]
+	SectionPlayerNames = Sections[4]
 )
 
 // parse parses an SC:BW replay using the given Decoder.
@@ -209,34 +214,53 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 	// We have to read all sections, some data (e.g. player colors) are positioned after map data.
 
 	// A replay is a sequence of sections:
-	for _, s := range Sections {
+	for sectionCounter := 0; ; sectionCounter++ {
 		if err := dec.NewSection(); err != nil {
 			if err == repdecoder.ErrNoMoreSections {
 				break
 			}
-			return nil, fmt.Errorf("Decoder.NewSection() error: %v", err)
+			return nil, fmt.Errorf("Decoder.NewSection() error: %w", err)
 		}
 
-		// Determine section size:
-		size := s.Size
-		if size == 0 {
-			sizeData, err := dec.Section(4)
-			if err != nil {
-				return nil, fmt.Errorf("Decoder.Section() error when reading size: %v", err)
+		fmt.Println("icza ", sectionCounter)
+		var s *Section
+		var size int32
+		if sectionCounter < len(Sections) {
+			s = Sections[sectionCounter]
+
+			// Determine section size:
+			size = s.Size
+			if size == 0 {
+				sizeData, _, err := dec.Section(4)
+				if err != nil {
+					return nil, fmt.Errorf("Decoder.Section() error when reading size: %w", err)
+				}
+				size = int32(binary.LittleEndian.Uint32(sizeData))
 			}
-			size = int32(binary.LittleEndian.Uint32(sizeData))
 		}
 
 		// Read section data
-		data, err := dec.Section(size)
-		if err != nil && s.ID == SectionReplayID.ID {
-			err = ErrNotReplayFile // In case of Replay ID section return special error
-		}
+		data, sectionID, err := dec.Section(size)
 		if err != nil {
+			if s != nil && s.ID == SectionReplayID.ID {
+				err = ErrNotReplayFile // In case of Replay ID section return special error
+			}
 			if err == io.EOF {
 				break // New sections with StrID are optional
 			}
-			return nil, fmt.Errorf("Decoder.Section() error: %v", err)
+			return nil, fmt.Errorf("Decoder.Section() error: %w", err)
+		}
+
+		if s == nil {
+			fmt.Println("icza sectionID ", sectionID)
+			s = ModernSections[sectionID]
+			if s == nil {
+				// Unknown section, just skip it:
+				idBytes := make([]byte, 4)
+				binary.LittleEndian.PutUint32(idBytes, uint32(sectionID))
+				log.Printf("Unknown modern section ID: %s", idBytes)
+				continue
+			}
 		}
 
 		// Need to process?
@@ -261,6 +285,9 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 			}
 		}
 	}
+
+	// Modern sections may or may not exist. Remastered's modern sections are in fixed order,
+	// but we don't rely on it.
 
 	return r, nil
 }
@@ -961,7 +988,7 @@ func parsePlayerNames(data []byte, r *rep.Replay, cfg Config) error {
 
 // parseSkin processes the skin data.
 func parseSkin(data []byte, r *rep.Replay, cfg Config) error {
-	// TODO 0x100 bytes of data
+	// TODO 0x15e0 bytes of data
 	return nil
 }
 
@@ -987,6 +1014,12 @@ func parseBfix(data []byte, r *rep.Replay, cfg Config) error {
 	return nil
 }
 
+// parseGcfg processes the gcfg data.
+func parseGcfg(data []byte, r *rep.Replay, cfg Config) error {
+	// TODO 0x19 bytes of data
+	return nil
+}
+
 // parsePlayerColors processes the player colors data.
 func parsePlayerColors(data []byte, r *rep.Replay, cfg Config) error {
 	// 16 bytes footprint for all colors.
@@ -999,6 +1032,13 @@ func parsePlayerColors(data []byte, r *rep.Replay, cfg Config) error {
 			p.Color = c
 		}
 	}
+
+	return nil
+}
+
+// parseShieldBatterySection processes the ShieldBattery data.
+func parseShieldBatterySection(data []byte, r *rep.Replay, cfg Config) error {
+	// TODO
 
 	return nil
 }

@@ -106,7 +106,7 @@ type esi struct {
 	data []byte
 }
 
-func (d *legacyDecoder) Section(size int32) (result []byte, err error) {
+func (d *legacyDecoder) Section(size int32) (result []byte, sectionID int32, err error) {
 	var count int32
 	if count, result, err = d.sectionHeader(size); result != nil || err != nil {
 		return
@@ -123,10 +123,10 @@ func (d *legacyDecoder) Section(size int32) (result []byte, err error) {
 	for ; n < count; n, m1C, m20 = n+1, m1C+bufLen, m20+length2 {
 		var length int32 // compressed length of the chunk
 		if length, err = d.readInt32(); err != nil {
-			return nil, err
+			return nil, sectionID, err
 		}
 		if length > size-m20 {
-			return nil, ErrMismatchedSection
+			return nil, sectionID, ErrMismatchedSection
 		}
 
 		if _, err = io.ReadFull(d.r, result[resultOffset:resultOffset+length]); err != nil {
@@ -151,14 +151,14 @@ func (d *legacyDecoder) Section(size int32) (result []byte, err error) {
 			length2 = 0
 		}
 		if length2 == 0 || length2 > size {
-			return nil, ErrMismatchedSection
+			return nil, sectionID, ErrMismatchedSection
 		}
 
 		copy(result[resultOffset:], buf[:length2])
 		resultOffset += length2
 	}
 
-	return result, nil
+	return result, sectionID, nil
 }
 
 // initEsi initializes (zeroes) the esi struct.

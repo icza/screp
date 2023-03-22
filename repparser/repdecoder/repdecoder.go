@@ -39,7 +39,7 @@ type Decoder interface {
 	NewSection() error
 
 	// Section decodes a section of the given size.
-	Section(size int32) (data []byte, err error)
+	Section(size int32) (data []byte, sectionID int32, err error)
 
 	// Close closes the decoder, releases any associated resources.
 	io.Closer
