@@ -29,6 +29,9 @@ type Replay struct {
 	// Computed contains data that is computed / derived from other parts of the
 	// replay.
 	Computed *Computed
+
+	// ShieldBattery holds info if game was played on ShieldBattery
+	ShieldBattery *ShieldBattery `json:",omitempty"`
 }
 
 // Compute creates and computes the Computed field.

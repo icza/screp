@@ -222,7 +222,6 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 			return nil, fmt.Errorf("Decoder.NewSection() error: %w", err)
 		}
 
-		fmt.Println("icza ", sectionCounter)
 		var s *Section
 		var size int32
 		if sectionCounter < len(Sections) {
@@ -252,7 +251,6 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 		}
 
 		if s == nil {
-			fmt.Println("icza sectionID ", sectionID)
 			s = ModernSections[sectionID]
 			if s == nil {
 				// Unknown section, just skip it:
@@ -1038,7 +1036,34 @@ func parsePlayerColors(data []byte, r *rep.Replay, cfg Config) error {
 
 // parseShieldBatterySection processes the ShieldBattery data.
 func parseShieldBatterySection(data []byte, r *rep.Replay, cfg Config) error {
-	// TODO
+	// info source:
+	// https://github.com/ShieldBattery/ShieldBattery/blob/master/game/src/replay.rs#L62-L80
+	// https://github.com/ShieldBattery/ShieldBattery/blob/master/app/replays/parse-shieldbattery-replay.ts
+
+	if len(data) < 0x56 {
+		// 0x56 bytes is the size of SB's first version of the section.
+		return nil // Unknown format
+	}
+
+	bo := binary.LittleEndian // ByteOrder reader: little-endian
+
+	sb := new(rep.ShieldBattery)
+	r.ShieldBattery = sb
+
+	formatVersion := bo.Uint16(data)
+
+	sb.StarCraftExeBuild = bo.Uint32(data[0x01:])
+	sb.ShieldBatteryVersion, _ = cString(data[0x06:0x16])
+
+	// 0x16 - 0x1a: team_game_main_players
+	// 0x1a - 0x26: starting_races
+
+	gameID := data[0x26:0x36]
+	sb.GameID = fmt.Sprintf("%x-%x-%x-%x-%x", gameID[:4], gameID[4:6], gameID[6:8], gameID[8:10], gameID[10:])
+
+	if formatVersion >= 0x01 {
+		// 0x56 - 0x58: game_logic_version
+	}
 
 	return nil
 }
