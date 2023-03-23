@@ -28,7 +28,7 @@ var knownModernSectionIDSizeHints = map[int32]int32{
 func (d *modernDecoder) Section(size int32) (result []byte, sectionID int32, err error) {
 	if d.sectionsCounter > 5 {
 		// These are the sections added in modern replays.
-		if sectionID, err = d.readInt32(); err != nil { // This is the StrID of the section, not checking it
+		if sectionID, err = d.readInt32(); err != nil { // This is the StrID of the section
 			return
 		}
 		var rawSize int32

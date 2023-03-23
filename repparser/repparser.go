@@ -60,7 +60,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.11.0"
+	Version = "v1.11.1"
 )
 
 var (
@@ -246,6 +246,11 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 			}
 			if err == io.EOF {
 				break // New sections with StrID are optional
+			}
+			if sectionCounter >= len(Sections) {
+				// If we got "enough" info, just log the error:
+				log.Printf("Warning: Decoder.Section() error: %v", err)
+				break
 			}
 			return nil, fmt.Errorf("Decoder.Section() error: %w", err)
 		}
