@@ -551,6 +551,7 @@ func (r *Replay) computeMeleeTeams() {
 			for _, slotIDC := range slotIDSlotIDs[slotIDB] {
 				if slotIDC == slotIDA {
 					// found!
+					found = true
 					break
 				}
 			}
