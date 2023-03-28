@@ -60,7 +60,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.11.2"
+	Version = "v1.11.3"
 )
 
 var (
@@ -210,6 +210,7 @@ var (
 // parse parses an SC:BW replay using the given Decoder.
 func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 	r := new(rep.Replay)
+	r.RepFormat = dec.RepFormat()
 
 	// We have to read all sections, some data (e.g. player colors) are positioned after map data.
 
@@ -274,17 +275,6 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 			// Process section data
 			if err = s.ParseFunc(data, r, cfg); err != nil {
 				return nil, fmt.Errorf("ParseFunc() error (sectionID: %d): %v", s.ID, err)
-			}
-			if s == SectionHeader {
-				// Fill Version:
-				switch dec.RepFormat() {
-				case repdecoder.RepFormatModern121:
-					r.Header.Version = "1.21+"
-				case repdecoder.RepFormatLegacy:
-					r.Header.Version = "-1.16"
-				case repdecoder.RepFormatModern:
-					r.Header.Version = "1.18-1.20"
-				}
 			}
 		}
 	}
@@ -352,10 +342,29 @@ func parseHeader(data []byte, r *rep.Replay, cfg Config) error {
 		}
 	}
 
+	// Fill Version:
+	switch r.RepFormat {
+	case repdecoder.RepFormatModern121:
+		r.Header.Version = "1.21+"
+	case repdecoder.RepFormatLegacy:
+		r.Header.Version = "-1.16"
+	case repdecoder.RepFormatModern:
+		r.Header.Version = "1.18-1.20"
+	}
+
 	h.Engine = repcore.EngineByID(data[0x00])
 	h.Frames = repcore.Frame(bo.Uint32(data[0x01:]))
 	h.StartTime = time.Unix(int64(bo.Uint32(data[0x08:])), 0) // replay stores seconds since EPOCH
-	h.Title, h.RawTitle = cString(data[0x18 : 0x18+28])
+	// SC:R uses UTF-8 always (except the map data section which may come from an external source or from the "past").
+	// The game UI allows longer title than what fits into its space in the header. If longer, SC simply "cuts" it,
+	// even in the middle of a multi-byte UTF-8 sequence :S
+	// This may result in reading invalid UTF-8 title data, even though it was generated using UTF-8,
+	// and hence must be decoded as such.
+	if r.RepFormat == repdecoder.RepFormatLegacy {
+		h.Title, h.RawTitle = cString(data[0x18 : 0x18+28])
+	} else {
+		h.Title, h.RawTitle = cStringUTF8(data[0x18 : 0x18+28])
+	}
 	h.MapWidth = bo.Uint16(data[0x34:])
 	h.MapHeight = bo.Uint16(data[0x36:])
 	h.AvailSlotsCount = data[0x39]
@@ -1095,8 +1104,33 @@ func cString(data []byte) (s string, orig string) {
 	}
 
 	// Return data as string.
-	// We end up here if no terminating 0 char found, or string is valid UTF-8, or it is invalid but custom decoding failed.
+	// We end up here if:
+	//   - no terminating 0 char found,
+	//   - or string is valid UTF-8,
+	//   - or it is invalid but custom decoding failed
 	// Either way:
+	s = string(data)
+	return s, s
+}
+
+// cStringUTF8 returns a 0x00 byte terminated string from the given buffer,
+// always using UTF-8 encoding.
+// If the data is invalid UTF-8, invalid sequences will be removed from it.
+//
+// Returns both the decoded and the original string.
+func cStringUTF8(data []byte) (s string, orig string) {
+	// Find 0x00 byte:
+	for i, ch := range data {
+		if ch == 0 {
+			data = data[:i] // excludes terminating 0x00
+			break
+		}
+	}
+
+	if !utf8.Valid(data) {
+		return string(bytes.ToValidUTF8(data, nil)), string(data)
+	}
+
 	s = string(data)
 	return s, s
 }

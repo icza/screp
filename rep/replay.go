@@ -13,10 +13,14 @@ import (
 
 	"github.com/icza/screp/rep/repcmd"
 	"github.com/icza/screp/rep/repcore"
+	"github.com/icza/screp/repparser/repdecoder"
 )
 
 // Replay models an SC:BW replay.
 type Replay struct {
+	// Stored here for decoding purposes only.
+	RepFormat repdecoder.RepFormat `json:"-"`
+
 	// Header of the replay
 	Header *Header
 
