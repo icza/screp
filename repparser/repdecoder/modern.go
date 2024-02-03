@@ -74,7 +74,9 @@ func (d *modernDecoder) Section(size int32) (result []byte, sectionID int32, err
 				err = resetter.Reset(bytes.NewBuffer(compressed), nil)
 			} else {
 				zr, err = zlib.NewReader(bytes.NewBuffer(compressed))
-				defer zr.Close()
+				if zr != nil {
+					defer zr.Close()
+				}
 			}
 			if err != nil {
 				return nil, sectionID, err
