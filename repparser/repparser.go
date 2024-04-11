@@ -60,7 +60,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.11.3"
+	Version = "v1.11.4"
 )
 
 var (
@@ -775,6 +775,12 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 		md.MapGraphics = &rep.MapGraphics{}
 	}
 
+	// Even though "ERA " section is mandatory, I've seen reps where it was missing.
+	// TileSet may be cruitial for some apps, let's ensure it doesn't remain nil.
+	// Somewhat arbitrary default:
+	md.TileSet = repcore.TileSetTwilight
+	md.TileSetMissing = true
+
 	var (
 		scenarioNameIdx        uint16 // String index
 		scenarioDescriptionIdx uint16 // String index
@@ -793,6 +799,7 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 			md.Version = sr.getUint16()
 		case "ERA ": // Tile set sub-section
 			md.TileSet = repcore.TileSetByID(sr.getUint16() & 0x07)
+			md.TileSetMissing = false
 		case "DIM ": // Dimension sub-section
 			// If map has a non-standard size, the replay header contains
 			// invalid map size, this is the correct one.

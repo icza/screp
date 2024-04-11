@@ -18,6 +18,8 @@ type MapData struct {
 	// TileSet defines the tile set used on the map.
 	TileSet *repcore.TileSet
 
+	TileSetMissing bool `json:"tileSetMissing,omitempty"`
+
 	// Scenario name
 	Name string
 
