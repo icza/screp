@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/icza/gox/stringsx"
 	"github.com/icza/screp/rep/repcmd"
 	"github.com/icza/screp/rep/repcore"
 	"github.com/icza/screp/repparser/repdecoder"
@@ -153,10 +154,11 @@ func (r *Replay) Compute() {
 			if r.MapData != nil {
 				mapName = r.MapData.Name
 			}
-			mapName = strings.ToLower(mapName)
+			// counter-example: " \aai \x04hunters \x02remastered \x062.0"
+			mapName = strings.ToLower(stringsx.Clean(mapName))
 			// "[ai]" maps are special, we can do better than in general:
 			switch {
-			case strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "bgh random teams"):
+			case strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams"):
 				r.detectObservers(pidBuilds, obsProfileUMSAI)
 				r.computeUMSTeamsAI()
 			default:
