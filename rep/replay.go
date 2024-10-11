@@ -158,9 +158,13 @@ func (r *Replay) Compute() {
 			mapName = strings.ToLower(stringsx.Clean(mapName))
 			// "[ai]" maps are special, we can do better than in general:
 			switch {
+
+			case mapName == "  hunters kespa soulclan ai" || mapName == ":da hunters ai":
+				fallthrough
 			case strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams"):
 				r.detectObservers(pidBuilds, obsProfileUMSAI)
 				r.computeUMSTeamsAI()
+
 			default:
 				r.computeUMSTeams()
 			}
