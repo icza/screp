@@ -154,14 +154,13 @@ func (r *Replay) Compute() {
 			if r.MapData != nil {
 				mapName = r.MapData.Name
 			}
-			// counter-example: " \aai \x04hunters \x02remastered \x062.0"
+			// counter-examples: " \aai \x04hunters \x02remastered \x062.0", "\x03(XB2)\x06 Big Game Hunters"
 			mapName = strings.ToLower(stringsx.Clean(mapName))
 			// "[ai]" maps are special, we can do better than in general:
 			switch {
-
-			case mapName == "  hunters kespa soulclan ai" || mapName == ":da hunters ai":
-				fallthrough
-			case strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams"):
+			case mapName == "  hunters kespa soulclan ai" || mapName == ":da hunters ai" ||
+				mapName == "(xb2) big game hunters" || strings.HasPrefix(mapName, "王牌猎人") ||
+				strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams"):
 				r.detectObservers(pidBuilds, obsProfileUMSAI)
 				r.computeUMSTeamsAI()
 
