@@ -60,7 +60,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.12.2"
+	Version = "v1.12.3"
 )
 
 var (
@@ -791,6 +791,10 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 	// Map data section is a sequence of sub-sections:
 	for sr, size := (sliceReader{b: data}), uint32(len(data)); sr.pos < size; {
 		id := sr.getString(4)
+		// Seen examples where a "final" UPUS section following UPRP section had only 1 byte hereon, so check:
+		if sr.pos+4 >= size {
+			break
+		}
 		ssSize := sr.getUint32()    // sub-section size (remaining)
 		ssEndPos := sr.pos + ssSize // sub-section end position
 
