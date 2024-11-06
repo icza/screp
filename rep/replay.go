@@ -158,8 +158,10 @@ func (r *Replay) Compute() {
 			mapName = strings.ToLower(stringsx.Clean(mapName))
 			// "[ai]" maps are special, we can do better than in general:
 			switch {
-			case mapName == "  hunters kespa soulclan ai" || mapName == ":da hunters ai" ||
-				mapName == "(xb2) big game hunters" || strings.HasPrefix(mapName, "王牌猎人") ||
+			case mapName == "  hunters kespa soulclan ai" || mapName == ":da hunters ai" || mapName == "(xb2) big game hunters" ||
+				mapName == "big game hunters" || // Multiple BGH versions have random team assignment, always try if UMS
+				strings.HasPrefix(mapName, "王牌猎人") || strings.HasPrefix(mapName, "j_big game hunters") ||
+				strings.Contains(mapName, "随机分组") || // "random grouping"
 				strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams"):
 				r.detectObservers(pidBuilds, obsProfileUMSAI)
 				r.computeUMSTeamsAI()
