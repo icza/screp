@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -291,6 +292,10 @@ cmdLoop:
 // Alliance commands in the first 115 seconds are checked; if they consistently denote 2 teams (and an optional observer team),
 // players are assigned team 1 and 2 respectively (and observers are assigned team 3, and marked as observers).
 //
+// As a special / fallback case, if only player(s) from one team checked alliance
+// (which results in a single known team), and the remaining non-obs players are of the same count,
+// accept this as the team setup: known team vs the rest as the other team.
+//
 // If teams can be computed, also rearranges Header.Players and Computed.PlayerDescs
 // according to new teams.
 func (r *Replay) computeUMSTeamsAI() {
@@ -381,7 +386,37 @@ func (r *Replay) computeUMSTeamsAI() {
 		virtualTeamIDSlotIDs[virtualID] = slotIDs
 	}
 	if len(virtualTeamIDSlotIDs) != 2 {
-		return // not 2 teams exactly
+		// Not 2 teams exactly.
+		// Check for the "special / fallback case": if only player(s) from one team checked alliance
+		// (which results in a single known team), and the remaining non-obs players are of the same count,
+		// accept this as the team setup: known team vs the rest as the other team.
+		specialCase := false
+		if len(virtualTeamIDSlotIDs) == 1 {
+			// Need the one element from the map, build a set from it for easy lookup.
+			knownTeamSlotIDs := map[byte]bool{}
+			for _, slotIDs := range virtualTeamIDSlotIDs {
+				for _, slotID := range slotIDs {
+					knownTeamSlotIDs[slotID] = true
+				}
+			}
+			// Collect remaining non-obs slotIDs
+			remainingSlotIDs := make([]byte, 0, len(players))
+			for _, p := range players {
+				if p.Observer || knownTeamSlotIDs[byte(p.SlotID)] {
+					continue
+				}
+				remainingSlotIDs = append(remainingSlotIDs, byte(p.SlotID))
+			}
+			if len(knownTeamSlotIDs) == len(remainingSlotIDs) {
+				// Hooray! Sort slot IDs and add as a virtual team:
+				specialCase = true
+				slices.Sort(remainingSlotIDs)
+				virtualTeamIDSlotIDs[fmt.Sprint(remainingSlotIDs)] = remainingSlotIDs
+			}
+		}
+		if !specialCase {
+			return
+		}
 	}
 
 	var team1SlotIDs, team2SlotIDs []byte
