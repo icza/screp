@@ -40,6 +40,16 @@ type Replay struct {
 	ShieldBattery *ShieldBattery `json:",omitempty"`
 }
 
+// Set of lowered and cleaned map names that use the UMS random teams feature.
+// Transformation on map names to obtain keys: strings.ToLower(stringsx.Clean(mapName))
+var exactUMSTeamsAIMaps = map[string]bool{
+	"  hunters kespa soulclan ai": true,
+	":da hunters ai":              true,
+	"(xb2) big game hunters":      true,
+	"(xsc) big game hunters":      true,
+	"big game hunters":            true, // Multiple BGH versions have random team assignment, always try if UMS
+}
+
 // Compute creates and computes the Computed field.
 func (r *Replay) Compute() {
 	if r.Computed != nil {
@@ -150,6 +160,7 @@ func (r *Replay) Compute() {
 		}
 
 		switch r.Header.Type {
+
 		case repcore.GameTypeUMS:
 			mapName := r.Header.Map
 			if r.MapData != nil {
@@ -159,17 +170,20 @@ func (r *Replay) Compute() {
 			mapName = strings.ToLower(stringsx.Clean(mapName))
 			// "[ai]" maps are special, we can do better than in general:
 			switch {
-			case mapName == "  hunters kespa soulclan ai" || mapName == ":da hunters ai" || mapName == "(xb2) big game hunters" ||
-				mapName == "big game hunters" || // Multiple BGH versions have random team assignment, always try if UMS
+
+			case exactUMSTeamsAIMaps[mapName] ||
 				strings.HasPrefix(mapName, "王牌猎人") || strings.HasPrefix(mapName, "j_big game hunters") ||
 				strings.Contains(mapName, "随机分组") || // "random grouping"
-				strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams"):
+				strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams") ||
+				strings.Contains(mapName, "new super random team") || strings.Contains(mapName, "new super ◆random team") || strings.Contains(mapName, "fa§te§t random team") ||
+				strings.Contains(mapName, "random forces"):
 				r.detectObservers(pidBuilds, obsProfileUMSAI)
 				r.computeUMSTeamsAI()
 
 			default:
 				r.computeUMSTeams()
 			}
+
 		case repcore.GameTypeMelee:
 			r.detectObservers(pidBuilds, obsProfileMelee)
 			r.computeMeleeTeams()
