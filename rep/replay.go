@@ -47,6 +47,7 @@ var exactUMSTeamsAIMaps = map[string]bool{
 	":da hunters ai":              true,
 	"(xb2) big game hunters":      true,
 	"(xsc) big game hunters":      true,
+	"big game hunters  =c.r=":     true,
 	"big game hunters":            true, // Multiple BGH versions have random team assignment, always try if UMS
 }
 
@@ -173,6 +174,7 @@ func (r *Replay) Compute() {
 
 			case exactUMSTeamsAIMaps[mapName] ||
 				strings.HasPrefix(mapName, "王牌猎人") || strings.HasPrefix(mapName, "j_big game hunters") ||
+				strings.Contains(mapName, "韩国宏图") || // "South Korea's grand plan"
 				strings.Contains(mapName, "随机分组") || // "random grouping"
 				strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams") ||
 				strings.Contains(mapName, "new super random team") || strings.Contains(mapName, "new super ◆random team") || strings.Contains(mapName, "fa§te§t random team") ||
