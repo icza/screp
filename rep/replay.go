@@ -176,7 +176,7 @@ func (r *Replay) Compute() {
 				strings.HasPrefix(mapName, "王牌猎人") || strings.HasPrefix(mapName, "j_big game hunters") ||
 				strings.Contains(mapName, "宏图") || // "grand plan"; e.g. "South Korea's grand plan" (韩国宏图) or "中国宏图" ("China's grand plan")
 				strings.Contains(mapName, "随机分组") || // "random grouping"
-				strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams") ||
+				strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams") || strings.Contains(mapName, "big game hunters [r]") ||
 				strings.Contains(mapName, "new super random team") || strings.Contains(mapName, "new super ◆random team") || strings.Contains(mapName, "fa§te§t random team") ||
 				strings.Contains(mapName, "random forces"):
 				r.detectObservers(pidBuilds, obsProfileUMSAI)
