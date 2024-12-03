@@ -53,4 +53,4 @@ This will create an executable binary in the `cmd/screp` folder, ready to run.
 
 ## Example projects using this
 
-- [repmastered.app](https://repmastered.app)
+- [RepMastered™](https://repmastered.icza.net)
