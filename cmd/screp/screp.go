@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"hash"
+	"io"
 	"os"
 	"runtime"
 	"strings"
@@ -24,7 +25,7 @@ import (
 
 const (
 	appName    = "screp"
-	appVersion = "v1.12.9"
+	appVersion = "v1.12.10"
 	appAuthor  = "Andras Belicza"
 	appHome    = "https://github.com/icza/screp"
 )
@@ -53,6 +54,7 @@ var (
 	computed    = flag.Bool("computed", true, "print computed / derived data")
 	mapDataHash = flag.String("mapDataHash", "", "calculate and print the hash of map data section too using the given algorithm;\n"+validMapDataHashes)
 	dumpMapData = flag.Bool("dumpMapData", false, "dump the raw map data (CHK) instead of JSON replay info\nuse it with the 'outfile' flag")
+	stdin       = flag.Bool("stdin", false, "read replay content from standard input instead of a file")
 	outFile     = flag.String("outfile", "", "optional output file name")
 
 	indent = flag.Bool("indent", true, "use indentation when formatting output")
@@ -67,7 +69,7 @@ func main() {
 	}
 
 	args := flag.Args()
-	if len(args) < 1 {
+	if !*stdin && len(args) < 1 {
 		printUsage()
 		os.Exit(ExitCodeMissingArguments)
 	}
@@ -104,7 +106,24 @@ func main() {
 		cfg.Debug = true
 	}
 
-	r, err := repparser.ParseFileConfig(args[0], cfg)
+	// Parse replay now
+	var (
+		r   *rep.Replay
+		err error
+	)
+
+	if *stdin {
+		var data []byte
+		data, err = io.ReadAll(os.Stdin)
+		if err != nil {
+			fmt.Printf("Failed to read from stdin: %v\n", err)
+			os.Exit(ExitCodeFailedToParseReplay)
+		}
+		r, err = repparser.ParseConfig(data, cfg)
+	} else {
+		r, err = repparser.ParseFileConfig(args[0], cfg)
+	}
+
 	if err != nil {
 		fmt.Printf("Failed to parse replay: %v\n", err)
 		os.Exit(ExitCodeFailedToParseReplay)
