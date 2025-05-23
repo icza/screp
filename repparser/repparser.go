@@ -88,6 +88,12 @@ type Config struct {
 	// MapData must be parsed too.
 	MapGraphics bool
 
+	// Custom logger to use to report parsing errors.
+	// If nil, the default logger of the log package will be used.
+	// To suppress logs, use a new logger directed to io.Discard, e.g.:
+	// discardLogger := log.New(io.Discard, "", 0)
+	Logger *log.Logger
+
 	_ struct{} // To prevent unkeyed literals
 }
 
@@ -144,14 +150,19 @@ func ParseConfig(repData []byte, cfg Config) (*rep.Replay, error) {
 // parseProtected calls parse(), but protects the function call from panics,
 // in which case it returns ErrParsing.
 func parseProtected(dec repdecoder.Decoder, cfg Config) (r *rep.Replay, err error) {
+	// Make sure cfg.Logger is not nil, in one place:
+	if cfg.Logger == nil {
+		cfg.Logger = log.Default()
+	}
+
 	// Input is untrusted data, protect the parsing logic.
 	// It also protects against implementation bugs.
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("Parsing error: %v", r)
+			cfg.Logger.Printf("Parsing error: %v", r)
 			buf := make([]byte, 2000)
 			n := runtime.Stack(buf, false)
-			log.Printf("Stack: %s", buf[:n])
+			cfg.Logger.Printf("Stack: %s", buf[:n])
 			err = ErrParsing
 		}
 	}()
@@ -250,7 +261,7 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 			}
 			if sectionCounter >= len(Sections) {
 				// If we got "enough" info, just log the error:
-				log.Printf("Warning: Decoder.Section() error: %v", err)
+				cfg.Logger.Printf("Warning: Decoder.Section() error: %v", err)
 				break
 			}
 			return nil, fmt.Errorf("Decoder.Section() error: %w", err)
@@ -262,7 +273,7 @@ func parse(dec repdecoder.Decoder, cfg Config) (*rep.Replay, error) {
 				// Unknown section, just skip it:
 				idBytes := make([]byte, 4)
 				binary.LittleEndian.PutUint32(idBytes, uint32(sectionID))
-				log.Printf("Unknown modern section ID: %s", idBytes)
+				cfg.Logger.Printf("Unknown modern section ID: %s", idBytes)
 				continue
 			}
 		}
@@ -739,7 +750,7 @@ func parseCommands(data []byte, r *rep.Replay, cfg Config) error {
 				if sr.pos <= cmdBlockEndPos && cmdBlockEndPos <= uint32(len(sr.b)) { // Due to "bad" parsing these must be checked...
 					remBytes = sr.b[sr.pos:cmdBlockEndPos]
 				}
-				fmt.Printf("skipping typeID: %#v, frame: %d, playerID: %d, remaining bytes: %d [% x]\n", base.Type.ID, base.Frame, base.PlayerID, cmdBlockEndPos-sr.pos, remBytes)
+				cfg.Logger.Printf("skipping typeID: %#v, frame: %d, playerID: %d, remaining bytes: %d [% x]\n", base.Type.ID, base.Frame, base.PlayerID, cmdBlockEndPos-sr.pos, remBytes)
 				pec := &repcmd.ParseErrCmd{Base: base}
 				if len(cs.Cmds) > 0 {
 					pec.PrevCmd = cs.Cmds[len(cs.Cmds)-1]
@@ -965,7 +976,7 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 		}
 		pos := uint32(idx) * offsetSize // idx is 1-based (0th offset is not included), but stringsData contains the offsets count too
 		if int(pos+offsetSize-1) >= len(stringsData) {
-			log.Printf("Invalid strings index: %d, map: %s", idx, r.Header.Map)
+			cfg.Logger.Printf("Invalid strings index: %d, map: %s", idx, r.Header.Map)
 			return ""
 		}
 		var offset uint32
@@ -975,7 +986,7 @@ func parseMapData(data []byte, r *rep.Replay, cfg Config) error {
 			offset = uint32((&sliceReader{b: stringsData, pos: pos}).getUint16())
 		}
 		if int(offset) >= len(stringsData) {
-			log.Printf("Invalid strings offset: %d, strings index: %d, map: %s", offset, idx, r.Header.Map)
+			cfg.Logger.Printf("Invalid strings offset: %d, strings index: %d, map: %s", offset, idx, r.Header.Map)
 			return ""
 		}
 		s, _ := cString(stringsData[offset:])
