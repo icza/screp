@@ -25,7 +25,7 @@ import (
 
 const (
 	appName    = "screp"
-	appVersion = "v1.12.10"
+	appVersion = "v1.12.11"
 	appAuthor  = "Andras Belicza"
 	appHome    = "https://github.com/icza/screp"
 )
