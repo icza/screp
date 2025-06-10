@@ -41,14 +41,16 @@ type Replay struct {
 }
 
 // Set of lowered and cleaned map names that use the UMS random teams feature.
-// Transformation on map names to obtain keys: strings.ToLower(stringsx.Clean(mapName))
+// Transformation on map names to obtain keys:
+//
+//	strings.TrimSpace(strings.ToLower(stringsx.Clean(mapName)))
 var exactUMSTeamsAIMaps = map[string]bool{
-	"  hunters kespa soulclan ai": true,
-	":da hunters ai":              true,
-	"(xb2) big game hunters":      true,
-	"(xsc) big game hunters":      true,
-	"big game hunters  =c.r=":     true,
-	"big game hunters":            true, // Multiple BGH versions have random team assignment, always try if UMS
+	"hunters kespa soulclan ai": true,
+	":da hunters ai":            true,
+	"(xb2) big game hunters":    true,
+	"(xsc) big game hunters":    true,
+	"big game hunters  =c.r=":   true,
+	"big game hunters":          true, // Multiple BGH versions have random team assignment, always try if UMS
 }
 
 // Compute creates and computes the Computed field.
@@ -167,8 +169,8 @@ func (r *Replay) Compute() {
 			if r.MapData != nil {
 				mapName = r.MapData.Name
 			}
-			// counter-examples: " \aai \x04hunters \x02remastered \x062.0", "\x03(XB2)\x06 Big Game Hunters"
-			mapName = strings.ToLower(stringsx.Clean(mapName))
+			// counter-examples: " \aai \x04hunters \x02remastered \x062.0", "\x03(XB2)\x06 Big Game Hunters", "Big Game Hungers "
+			mapName = strings.TrimSpace(strings.ToLower(stringsx.Clean(mapName)))
 			// "[ai]" maps are special, we can do better than in general:
 			switch {
 
