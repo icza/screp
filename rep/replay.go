@@ -181,7 +181,8 @@ func (r *Replay) Compute() {
 				strings.Contains(mapName, "随机分组") || // "random grouping"
 				strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams") || strings.Contains(mapName, "big game hunters [r]") ||
 				strings.Contains(mapName, "new super random team") || strings.Contains(mapName, "new super ◆random team") || strings.Contains(mapName, "fa§te§t random team") ||
-				strings.Contains(mapName, "random forces"):
+				strings.Contains(mapName, "random forces") ||
+				strings.Contains(mapName, "zidongfenzu") || strings.Contains(mapName, "zidong fenzu"):
 				r.detectObservers(pidBuilds, obsProfileUMSAI)
 				r.computeUMSTeamsAI()
 
