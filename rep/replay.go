@@ -45,12 +45,13 @@ type Replay struct {
 //
 //	strings.TrimSpace(strings.ToLower(stringsx.Clean(mapName)))
 var exactUMSTeamsAIMaps = map[string]bool{
-	"hunters kespa soulclan ai": true,
-	":da hunters ai":            true,
-	"(xb2) big game hunters":    true,
-	"(xsc) big game hunters":    true,
-	"big game hunters  =c.r=":   true,
-	"big game hunters":          true, // Multiple BGH versions have random team assignment, always try if UMS
+	"hunters kespa soulclan ai":  true,
+	":da hunters ai":             true,
+	"(xb2) big game hunters":     true,
+	"(xsc) big game hunters":     true,
+	"(xb) xing qiu da zhan [ht]": true,
+	"big game hunters  =c.r=":    true,
+	"big game hunters":           true, // Multiple BGH versions have random team assignment, always try if UMS
 }
 
 // Compute creates and computes the Computed field.
