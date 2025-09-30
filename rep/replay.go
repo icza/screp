@@ -52,7 +52,8 @@ var exactUMSTeamsAIMaps = map[string]bool{
 	"(xb) xing qiu da zhan [ht]": true, // Exact: "(XB) Xing qiu da zhan [ht]"
 	"big game hunters  =c.r=":    true, // Exact: "Big Game Hunters  =C.R="
 	"big game hunters":           true, // Multiple BGH versions have random team assignment, always try if UMS
-	"ai ]the[ hunters":           true,
+	"ai ]the[ hunters":           true, // Exact: "AI ]THE[ HUNTERS"
+	"ai ]the[ big game hunter":   true, // Exact: "AI ]THE[ BIG GAME HUNTER"
 	"xb19 big game hunters":      true, // Exact: "XB19 Big Game Hunters "
 }
 
@@ -183,6 +184,7 @@ func (r *Replay) Compute() {
 				strings.Contains(mapName, "宏图") || // "grand plan"; e.g. "South Korea's grand plan" (韩国宏图) or "中国宏图" ("China's grand plan")
 				strings.Contains(mapName, "随机分组") || // "random grouping"
 				strings.Contains(mapName, "随机组队") || // "random team"
+				strings.Contains(mapName, "逼组") || // "forced group"
 				strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams") || strings.Contains(mapName, "big game hunters [r]") ||
 				strings.Contains(mapName, "new super random team") || strings.Contains(mapName, "new super ◆random team") || strings.Contains(mapName, "fa§te§t random team") ||
 				strings.Contains(mapName, "random forces") ||
