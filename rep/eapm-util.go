@@ -9,7 +9,7 @@ import (
 
 const (
 	// EAPMVersion is a Semver2 compatible version of the EAPM algorithm.
-	EAPMVersion = "v1.0.5"
+	EAPMVersion = "v1.0.6"
 )
 
 // IsCmdEffective tells if a command is considered effective so it can be included in EAPM calculation.
@@ -84,26 +84,37 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) repcore.IneffKind {
 	// Too fast switch away from or reselecting the same selected unit = no use of selecting it.
 	// By too fast I mean it's not even enough to check the units' state.
 	if deltaFrame <= 8 && isSelectionChanger(cmd) && isSelectionChanger(prevCmd) {
+		// If cmd is a "Select Add/Remove", it's not inefficient even if close to a select in time:
+		isAddRemove := false
+		switch cmd.BaseCmd().Type.ID {
+		case repcmd.TypeIDSelectAdd, repcmd.TypeIDSelectRemove,
+			repcmd.TypeIDSelectAdd121, repcmd.TypeIDSelectRemove121:
+			isAddRemove = true
+		}
+
 		// Exclude double tapping the same hotkey: it's only ineffective if tapped more than 3 times
 		// (double tapping is used to center the group)
 		doubleTap := false
-		if he, ok := cmd.(*repcmd.HotkeyCmd); ok {
-			if he2, ok2 := prevCmd.(*repcmd.HotkeyCmd); ok2 {
-				if he.Group == he2.Group {
-					doubleTap = true
-					// Is it repeated fast at least 3 times?
-					if i >= 2 {
-						prevPrevCmd := cmds[i-2]
-						if he3, ok3 := prevPrevCmd.(*repcmd.HotkeyCmd); ok3 &&
-							he3.HotkeyType.ID == repcmd.HotkeyTypeIDSelect && he3.Group == he.Group &&
-							he2.Base.Frame-he3.Base.Frame <= 8 {
-							return repcore.IneffKindFastReselection // Same hotkey (select) pressed at least 3 times
+		if !isAddRemove { // If it's a "Select Add/Remove", it's surely not a hotkey double tap so no need to check
+			if hc, ok := cmd.(*repcmd.HotkeyCmd); ok {
+				if hc2, ok2 := prevCmd.(*repcmd.HotkeyCmd); ok2 {
+					if hc.Group == hc2.Group { // hc.HotkeyType.ID and hc2.HotkeyType.ID are both repcmd.HotkeyTypeIDSelect if we're here, so no need to check
+						doubleTap = true
+						// Is it repeated fast at least 3 times?
+						if i >= 2 {
+							prevPrevCmd := cmds[i-2]
+							if hc3, ok3 := prevPrevCmd.(*repcmd.HotkeyCmd); ok3 &&
+								hc3.HotkeyType.ID == repcmd.HotkeyTypeIDSelect && hc3.Group == hc.Group &&
+								hc2.Base.Frame-hc3.Base.Frame <= 8 {
+								return repcore.IneffKindFastReselection // Same hotkey (select) pressed at least 3 times
+							}
 						}
 					}
 				}
 			}
 		}
-		if !doubleTap {
+
+		if !isAddRemove && !doubleTap {
 			return repcore.IneffKindFastReselection
 		}
 	}
@@ -126,9 +137,9 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) repcore.IneffKind {
 	}
 
 	// Repetition of the same hotkey assign or add
-	if he, ok := cmd.(*repcmd.HotkeyCmd); ok && he.HotkeyType.ID != repcmd.HotkeyTypeIDSelect {
-		if he2, ok2 := prevCmd.(*repcmd.HotkeyCmd); ok2 && he2.HotkeyType.ID == he.HotkeyType.ID {
-			if he.Group == he2.Group {
+	if hc, ok := cmd.(*repcmd.HotkeyCmd); ok && hc.HotkeyType.ID != repcmd.HotkeyTypeIDSelect {
+		if hc2, ok2 := prevCmd.(*repcmd.HotkeyCmd); ok2 && hc2.HotkeyType.ID == hc.HotkeyType.ID {
+			if hc.Group == hc2.Group {
 				return repcore.IneffKindRepetitionHotkeyAddAssign
 			}
 		}
@@ -138,7 +149,7 @@ func CmdIneffKind(cmds []repcmd.Cmd, i int) repcore.IneffKind {
 }
 
 // countSameCmds counts how many times the given command is repeated on the same selected units
-// without about 1 second.
+// within about 1 second.
 //
 // Counting is capped at 6: even if the command is repeated more times, 6 is returned.
 //
