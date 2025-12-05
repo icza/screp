@@ -636,9 +636,11 @@ func parseCommands(data []byte, r *rep.Replay, cfg Config) error {
 				}
 
 			case repcmd.TypeIDCheat:
-				cmd = &repcmd.GeneralCmd{
-					Base: base,
-					Data: sr.readSlice(4),
+				cheatsBitmap := sr.getUint32()
+				cmd = &repcmd.CheatCmd{
+					Base:         base,
+					CheatsBitmap: cheatsBitmap,
+					CheatCodes:   repcmd.CheatCodesByBitMap(cheatsBitmap),
 				}
 
 			case repcmd.TypeIDSaveGame, repcmd.TypeIDLoadGame:

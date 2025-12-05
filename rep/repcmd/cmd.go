@@ -601,3 +601,35 @@ func (lc *LatencyCmd) Params(verbose bool) string {
 		), lc.Latency,
 	)
 }
+
+// CheatCmd describes a use cheat command. Type: TypeCheat
+type CheatCmd struct {
+	*Base
+
+	CheatsBitmap uint32
+	CheatCodes   []*CheatCode
+}
+
+// Params implements Cmd.Params().
+func (lc *CheatCmd) Params(verbose bool) string {
+	cheatCodes := ""
+	if len(lc.CheatCodes) == 0 {
+		cheatCodes = "Cheats Disabled"
+	} else {
+		sb := &strings.Builder{}
+		for i, cc := range lc.CheatCodes {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(cc.Name)
+		}
+		cheatCodes = sb.String()
+	}
+
+	return fmt.Sprintf(
+		c(verbose,
+			"Cheats: %v",
+			"%v",
+		), cheatCodes,
+	)
+}
