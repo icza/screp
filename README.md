@@ -54,3 +54,4 @@ This will create an executable binary in the `cmd/screp` folder, ready to run.
 ## Example projects using this
 
 - [RepMastered™](https://repmastered.icza.net)
+- [GG Archive](https://github.com/pentas1150/gg_archive)
