@@ -62,9 +62,20 @@ type PlayerDesc struct {
 
 // Redundancy returns the redundancy percent of the player's commands.
 // A command is redundant if its ineffective.
+// Returns -1 if the redundancy cannot be calculated (e.g. when CmdCount is 0).
 func (pd *PlayerDesc) Redundancy() int {
 	if pd.CmdCount == 0 {
-		return 0
+		return -1
 	}
 	return int(float64(pd.CmdCount-pd.EffectiveCmdCount)*100/float64(pd.CmdCount) + 0.5)
+}
+
+// RedundancyFloat returns the redundancy percent of the player's commands.
+// A command is redundant if its ineffective.
+// Returns -1 if the redundancy cannot be calculated (e.g. when CmdCount is 0).
+func (pd *PlayerDesc) RedundancyFloat() float64 {
+	if pd.CmdCount == 0 {
+		return -1.0
+	}
+	return float64(pd.CmdCount-pd.EffectiveCmdCount) * 100 / float64(pd.CmdCount)
 }
