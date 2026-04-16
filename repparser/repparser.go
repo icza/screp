@@ -27,6 +27,10 @@ jssuh replay parser:
 
 https://github.com/neivv/jssuh
 
+ShieldBattery's replay parser:
+
+https://github.com/ShieldBattery/broodrep
+
 Map Data format:
 
 https://www.starcraftai.com/wiki/CHK_Format
