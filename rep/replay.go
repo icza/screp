@@ -36,6 +36,9 @@ type Replay struct {
 	// replay.
 	Computed *Computed
 
+	// Limits section added in Remastered.
+	Limits *Limits `json:",omitempty"`
+
 	// ShieldBattery holds info if game was played on ShieldBattery
 	ShieldBattery *ShieldBattery `json:",omitempty"`
 }
