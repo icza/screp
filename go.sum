@@ -1,4 +1,4 @@
-github.com/icza/gox v0.2.2 h1:8+mKjD836kKz3vFuV94YZ/tG0SaTKeR5nTzMtIx3kl4=
-github.com/icza/gox v0.2.2/go.mod h1:rVecw5Q6POJAWBcXgCZdAtwK/hmoNehxCkAP3sMnOIc=
-golang.org/x/text v0.31.0 h1:aC8ghyu4JhP8VojJ2lEHBnochRno1sgL6nEi9WGFGMM=
-golang.org/x/text v0.31.0/go.mod h1:tKRAlv61yKIjGGHX/4tP1LTbc13YSec1pxVEWXzfoeM=
+github.com/icza/gox v0.2.14 h1:f20wY6FAB1RuUa8TlTydil2C2aA5z01ee6A1FTKk5go=
+github.com/icza/gox v0.2.14/go.mod h1:d62IGCt4ajK4/U7k/ldEF1Fi5jtP8C4hoGZiHQYfAi0=
+golang.org/x/text v0.40.0 h1:Ub2Z6/xjgF1WrYQz2nuITOEegKFtiIy+rieRJ5lHZKs=
+golang.org/x/text v0.40.0/go.mod h1:hpnzDAfGV753zIKo+wk3u1bVKCGPbrnF7+7LBF/UHVY=
