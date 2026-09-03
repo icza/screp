@@ -188,6 +188,7 @@ func (r *Replay) Compute() {
 				strings.Contains(mapName, "随机分组") || // "random grouping"
 				strings.Contains(mapName, "随机组队") || // "random team"
 				strings.Contains(mapName, "逼组") || // "forced group"
+				strings.Contains(mapName, "平衡种族") || // "balance races"
 				strings.Contains(mapName, "[ai]") || strings.Contains(mapName, "ai hunters") || strings.Contains(mapName, "bgh random teams") || strings.Contains(mapName, "big game hunters [r]") ||
 				strings.Contains(mapName, "new super random team") || strings.Contains(mapName, "new super ◆random team") || strings.Contains(mapName, "fa§te§t random team") ||
 				strings.Contains(mapName, "random forces") ||
