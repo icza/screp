@@ -69,6 +69,19 @@ func (r *Replay) Compute() {
 	players := r.Header.Players
 	numPlayers := len(players)
 
+	// 0 value for team causes trouble as it's used for unknown winner team for example
+	// (if team 0 would be detected as winner, we couldn't distinguish it from an unknown winner team).
+	// Shieldbattery matchmaking also uses 0 for team A and 1 for team B.
+	// Increment all teams if there is are players with team 0.
+	for _, p := range players {
+		if p.Team == 0 {
+			for _, p2 := range players {
+				p2.Team++
+			}
+			break
+		}
+	}
+
 	c := &Computed{
 		PlayerDescs:    make([]*PlayerDesc, numPlayers),
 		PIDPlayerDescs: make(map[byte]*PlayerDesc, numPlayers),
