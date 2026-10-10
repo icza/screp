@@ -1090,6 +1090,28 @@ func parseShieldBatterySection(data []byte, r *rep.Replay, cfg Config) error {
 	// https://github.com/ShieldBattery/ShieldBattery/blob/master/game/src/replay.rs#L62-L80
 	// https://github.com/ShieldBattery/ShieldBattery/blob/master/app/replays/parse-shieldbattery-replay.ts
 
+	// Current format: (The first two u32s are required by SC:R, after that we can have anything)
+	// u32 section_id
+	// u32 data_length (Not counting these first 8 bytes)
+	// 0x0      u16 format_version (2)
+	// 0x2      u32 starcraft_exe_build
+	//      This is somewhat redundant as GCFG section that SC:R writes by default has it too,
+	//      but may as well have a copy we control.
+	// 0x6      u8 shieldbattery_version_string[0x10]
+	// 0x16     u8 team_game_main_players[4]
+	//      Think that relying on it being [0, 0, 0, 0] for non-team games is ok?
+	//      BW shouldn't care at least.
+	// 0x1a     u8 starting_races[0xc]
+	//      This is also needed for team game replays.
+	// 0x26     u128 game_id_uuid
+	// 0x36     u32 user_ids[0x8]
+	//      Shieldbattery ids; Same order as ingame players (Which are saved in BW's replay
+	//      header, though there are 12 of them)
+	// --- Format version 1 ---
+	// 0x56     u16 game_logic_version (GAME_LOGIC_VERSION)
+	// --- Format version 2 ---
+	// 0x58     u32 disabled_logic_fixes (LogicFix::disable_bit mask)
+
 	if len(data) < 0x56 {
 		// 0x56 bytes is the size of SB's first version of the section.
 		return nil // Unknown format
@@ -1101,6 +1123,7 @@ func parseShieldBatterySection(data []byte, r *rep.Replay, cfg Config) error {
 	r.ShieldBattery = sb
 
 	formatVersion := bo.Uint16(data)
+	sb.FormatVersion = formatVersion
 
 	sb.StarCraftExeBuild = bo.Uint32(data[0x01:])
 	sb.ShieldBatteryVersion, _ = cString(data[0x06:0x16])
@@ -1112,7 +1135,9 @@ func parseShieldBatterySection(data []byte, r *rep.Replay, cfg Config) error {
 	sb.GameID = fmt.Sprintf("%x-%x-%x-%x-%x", gameID[:4], gameID[4:6], gameID[6:8], gameID[8:10], gameID[10:])
 
 	if formatVersion >= 0x01 {
-		// 0x56 - 0x58: game_logic_version
+		if len(data) >= 0x58 { // Just to be sure
+			sb.GameLogicVersion = bo.Uint16(data[0x56:0x58])
+		}
 	}
 
 	return nil
