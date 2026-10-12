@@ -1129,8 +1129,18 @@ func parseShieldBatterySection(data []byte, r *rep.Replay, cfg Config) error {
 
 	// 0x16 - 0x1a: team_game_main_players
 	// 0x1a - 0x26: starting_races
+	sb.UserIDs = make([]uint32, 8) // User IDs may not be in the front of the array
+	sb.PidGameID = make(map[byte]uint32, len(sb.UserIDs))
+	for i := range sb.UserIDs {
+		sb.UserIDs[i] = bo.Uint32(data[0x36+i*4 : 0x36+i*4+4])
+		if i < len(r.Header.Slots) {
+			sb.PidGameID[r.Header.Slots[i].ID] = sb.UserIDs[i]
+		}
+	}
 
 	gameID := data[0x26:0x36]
+	sb.RawGameID = make([]byte, len(gameID))
+	copy(sb.RawGameID, gameID) // Make a copy to not retain the data slice
 	sb.GameID = fmt.Sprintf("%x-%x-%x-%x-%x", gameID[:4], gameID[4:6], gameID[6:8], gameID[8:10], gameID[10:])
 
 	if formatVersion >= 0x01 {
