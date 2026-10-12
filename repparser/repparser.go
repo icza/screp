@@ -1087,8 +1087,7 @@ func parsePlayerColors(data []byte, r *rep.Replay, cfg Config) error {
 // parseShieldBatterySection processes the ShieldBattery data.
 func parseShieldBatterySection(data []byte, r *rep.Replay, cfg Config) error {
 	// info source:
-	// https://github.com/ShieldBattery/ShieldBattery/blob/master/game/src/replay.rs#L62-L80
-	// https://github.com/ShieldBattery/ShieldBattery/blob/master/app/replays/parse-shieldbattery-replay.ts
+	// https://github.com/ShieldBattery/ShieldBattery/blob/master/game/src/replay.rs
 
 	// Current format: (The first two u32s are required by SC:R, after that we can have anything)
 	// u32 section_id
@@ -1136,7 +1135,13 @@ func parseShieldBatterySection(data []byte, r *rep.Replay, cfg Config) error {
 
 	if formatVersion >= 0x01 {
 		if len(data) >= 0x58 { // Just to be sure
-			sb.GameLogicVersion = bo.Uint16(data[0x56:0x58])
+			sb.GameLogicVersion = new(bo.Uint16(data[0x56:0x58]))
+		}
+	}
+
+	if formatVersion >= 0x02 {
+		if len(data) >= 0x5c { // Just to be sure
+			sb.DisabledLogicFixes = new(bo.Uint32(data[0x58:0x5c]))
 		}
 	}
 

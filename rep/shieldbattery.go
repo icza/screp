@@ -8,5 +8,10 @@ type ShieldBattery struct {
 	StarCraftExeBuild    uint32
 	ShieldBatteryVersion string
 	GameID               string
-	GameLogicVersion     uint16
+
+	// Available for FormatVersion >= 1
+	GameLogicVersion *uint16 `json:",omitempty"`
+
+	// DisabledLogicFixes is a bitmask, each bit has its own meaning. Available for FormatVersion >= 2
+	DisabledLogicFixes *uint32 `json:",omitempty"`
 }
