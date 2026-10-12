@@ -12,6 +12,6 @@ type ShieldBattery struct {
 	// Available for FormatVersion >= 1
 	GameLogicVersion *uint16 `json:",omitempty"`
 
-	// DisabledLogicFixes is a bitmask, each bit has its own meaning. Available for FormatVersion >= 2
+	// DisabledLogicFixes is a bitmap, each bit has its own meaning. Available for FormatVersion >= 2
 	DisabledLogicFixes *uint32 `json:",omitempty"`
 }
