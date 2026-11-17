@@ -64,7 +64,7 @@ import (
 
 const (
 	// Version is a Semver2 compatible version of the parser.
-	Version = "v1.13.8"
+	Version = "v1.13.9"
 )
 
 var (
@@ -706,6 +706,8 @@ func parseCommands(data []byte, r *rep.Replay, cfg Config) error {
 				sr.pos += 12
 			case repcmd.TypeIDReplaySpeed:
 				sr.pos += 9
+			case 0x5d:
+				sr.pos += 4 // Unknown command, with 4 zero payload, appearing at the beginning of replay, some kind of init/sync
 
 			// New commands introduced in 1.21
 
